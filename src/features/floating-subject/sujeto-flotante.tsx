@@ -12,6 +12,7 @@ import {
   type Texture,
   Vector3,
 } from "three";
+import { ajustesDireccion } from "@/features/direction-panel/ajustes-direccion";
 import { aVec3, paleta } from "@/shared/paleta";
 import celFragmento from "./cel.frag.glsl?raw";
 import celVertice from "./cel.vert.glsl?raw";
@@ -19,17 +20,6 @@ import contornoFragmento from "./contorno.frag.glsl?raw";
 import contornoVertice from "./contorno.vert.glsl?raw";
 
 const MODELO = "/sujeto.glb";
-
-/** Ajustes del sombreado, pensados para que el panel de dirección los toque. */
-export const celPorDefecto = {
-  /** El albedo del modelo llega remapeado a la paleta desde el taller. */
-  usarTextura: true,
-  corteLuz: 0.32,
-  corteSombra: -0.08,
-  medio: 0.66,
-  sombra: 0.38,
-  grosorContorno: 0.011,
-};
 
 function conMaterial(original: Object3D, material: ShaderMaterial): Object3D {
   const copia = original.clone(true);
@@ -73,14 +63,14 @@ export function SujetoFlotante() {
         uniforms: {
           uMapa: { value: mapa },
           uBase: { value: new Vector3(...aVec3(paleta.cremaLuz)) },
-          uUsarTextura: { value: celPorDefecto.usarTextura ? 1 : 0 },
+          uUsarTextura: { value: ajustesDireccion.cel.usarTextura ? 1 : 0 },
           // la luz entra desde la izquierda, en espacio de vista: aquí solo
           // decide dónde cae la banda de sombra, no el color
           uLuz: { value: new Vector3(-0.72, 0.42, 0.55) },
-          uCorteLuz: { value: celPorDefecto.corteLuz },
-          uCorteSombra: { value: celPorDefecto.corteSombra },
-          uMedio: { value: celPorDefecto.medio },
-          uSombra: { value: celPorDefecto.sombra },
+          uCorteLuz: { value: ajustesDireccion.cel.corteLuz },
+          uCorteSombra: { value: ajustesDireccion.cel.corteSombra },
+          uMedio: { value: ajustesDireccion.cel.medio },
+          uSombra: { value: ajustesDireccion.cel.sombra },
         },
       }),
     [mapa],
@@ -93,7 +83,7 @@ export function SujetoFlotante() {
         fragmentShader: contornoFragmento,
         side: BackSide,
         uniforms: {
-          uGrosor: { value: celPorDefecto.grosorContorno },
+          uGrosor: { value: ajustesDireccion.cel.grosorContorno },
           uTinta: { value: new Vector3(...aVec3(paleta.tinta)) },
         },
       }),
@@ -115,15 +105,27 @@ export function SujetoFlotante() {
     if (!g) return;
     reloj.current += delta;
 
+    const { cel, sujeto } = ajustesDireccion;
+
+    // el panel mueve el sombreado en caliente: los uniforms se refrescan aquí
+    const u = materialCel.uniforms;
+    if (u.uUsarTextura) u.uUsarTextura.value = cel.usarTextura ? 1 : 0;
+    if (u.uCorteLuz) u.uCorteLuz.value = cel.corteLuz;
+    if (u.uCorteSombra) u.uCorteSombra.value = cel.corteSombra;
+    if (u.uMedio) u.uMedio.value = cel.medio;
+    if (u.uSombra) u.uSombra.value = cel.sombra;
+    const c = materialContorno.uniforms;
+    if (c.uGrosor) c.uGrosor.value = cel.grosorContorno;
+
     // reloj propio: gira a su ritmo, indiferente al visitante (§4.3)
-    g.rotation.y += delta * 0.16;
+    g.rotation.y += delta * sujeto.giro;
 
     // La deriva secundaria OSCILA, no se integra. Sumar un incremento en X y Z
     // cada fotograma acumula sin límite y el sujeto acaba dando volteretas como
     // un dado; lo que se busca es un balanceo de tres o cuatro grados. Las dos
     // frecuencias son inconmensurables para que el ciclo no se repita nunca.
-    g.rotation.x = Math.sin(reloj.current * 0.31) * 0.062;
-    g.rotation.z = Math.sin(reloj.current * 0.23 + 1.7) * 0.048;
+    g.rotation.x = Math.sin(reloj.current * 0.31) * sujeto.deriva;
+    g.rotation.z = Math.sin(reloj.current * 0.23 + 1.7) * sujeto.deriva * 0.78;
   });
 
   return (

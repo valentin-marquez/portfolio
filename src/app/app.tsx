@@ -1,4 +1,5 @@
 import { Canvas } from "@react-three/fiber";
+import { useMemo, useState } from "react";
 import { encuadrePorIndice, encuadres } from "@/features/camera-cuts/encuadres";
 import { PlataformaCamara } from "@/features/camera-cuts/plataforma-camara";
 import { useIndiceEncuadre } from "@/features/camera-cuts/use-indice-encuadre";
@@ -7,14 +8,27 @@ import {
   TipografiaCompuesta,
 } from "@/features/composed-type/tipografia-compuesta";
 import { CapaRecortes } from "@/features/cut-out-shapes/capa-recortes";
+import { PanelDireccion } from "@/features/direction-panel/panel-direccion";
 import { SondaDev } from "@/features/direction-panel/sonda-dev";
 import { SujetoFlotante } from "@/features/floating-subject/sujeto-flotante";
-import { ajustesPorDefecto, MundoGrafico } from "@/features/graphic-world/mundo-grafico";
+import { MundoGrafico } from "@/features/graphic-world/mundo-grafico";
 import { paleta } from "@/shared/paleta";
 
 export function App() {
   const indice = useIndiceEncuadre();
   const encuadre = encuadrePorIndice(indice);
+  const [textos, setTextos] = useState(() => palabrasPorDefecto.map((p) => ({ texto: p.texto })));
+
+  // Las palabras son lo único del panel que sí pasa por React: cambiar el texto
+  // obliga a regenerar la textura, y eso es un efecto, no una lectura por fotograma.
+  const palabras = useMemo(
+    () =>
+      palabrasPorDefecto.map((palabra, i) => ({
+        ...palabra,
+        texto: textos[i]?.texto ?? palabra.texto,
+      })),
+    [textos],
+  );
 
   return (
     <>
@@ -26,15 +40,18 @@ export function App() {
           dpr={[1, 1.75]}
           gl={{ antialias: true, preserveDrawingBuffer: true }}
         >
-          <MundoGrafico ajustes={{ ...ajustesPorDefecto, fondo: paleta[encuadre.fondo] }} />
+          <MundoGrafico fondo={paleta[encuadre.fondo]} />
           <PlataformaCamara encuadre={encuadre} />
-          <TipografiaCompuesta palabras={palabrasPorDefecto} />
+          <TipografiaCompuesta palabras={palabras} />
           <SujetoFlotante />
           <CapaRecortes clave={indice} />
           {import.meta.env.DEV && <SondaDev />}
         </Canvas>
       </div>
+
       <div className="recorrido" style={{ height: `${encuadres.length * 100}vh` }} />
+
+      {import.meta.env.DEV && <PanelDireccion alCambiarPalabras={setTextos} palabras={textos} />}
     </>
   );
 }

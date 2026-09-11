@@ -2,38 +2,17 @@ import { ScreenQuad } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import { type ShaderMaterial, Vector2, Vector3 } from "three";
+import { ajustesDireccion } from "@/features/direction-panel/ajustes-direccion";
 import { aVec3, paleta } from "@/shared/paleta";
 import fragmento from "./mundo-grafico.frag.glsl?raw";
 import vertice from "./mundo-grafico.vert.glsl?raw";
-
-/** Los ajustes del mundo gráfico, para que el panel de dirección los toque en vivo. */
-export type AjustesMundo = {
-  /** Color de la parada actual, en hexadecimal. Corta a la vez que la cámara. */
-  fondo: string;
-  angulo: number;
-  densidad: number;
-  bandas: boolean;
-  semitono: boolean;
-  grano: boolean;
-  desregistro: boolean;
-};
-
-export const ajustesPorDefecto: AjustesMundo = {
-  fondo: paleta.naranja,
-  angulo: 22,
-  densidad: 34,
-  bandas: true,
-  semitono: true,
-  grano: true,
-  desregistro: true,
-};
 
 function crearUniforms() {
   return {
     uResolucion: { value: new Vector2(1, 1) },
     uTiempo: { value: 0 },
-    uAngulo: { value: ajustesPorDefecto.angulo },
-    uDensidad: { value: ajustesPorDefecto.densidad },
+    uAngulo: { value: ajustesDireccion.mundo.angulo },
+    uDensidad: { value: ajustesDireccion.mundo.densidad },
     uBandas: { value: 1 },
     uSemitono: { value: 1 },
     uGrano: { value: 1 },
@@ -58,7 +37,7 @@ type Uniforms = ReturnType<typeof crearUniforms>;
  * y el mundo es cartel. Por eso esto es un cuadrilátero a pantalla completa con
  * un shader, y no geometría colocada en el espacio.
  */
-export function MundoGrafico({ ajustes }: { ajustes: AjustesMundo }) {
+export function MundoGrafico({ fondo }: { fondo: string }) {
   // el shader trabaja en gl_FragCoord, así que necesita el tamaño del framebuffer,
   // no el de píxeles CSS: con dpr 1,75 no son lo mismo y la trama se descoloca
   const renderizador = useThree((estado) => estado.gl);
@@ -73,13 +52,16 @@ export function MundoGrafico({ ajustes }: { ajustes: AjustesMundo }) {
 
     u.uTiempo.value += delta;
     renderizador.getDrawingBufferSize(u.uResolucion.value);
-    u.uFondo.value.set(...aVec3(ajustes.fondo));
-    u.uAngulo.value = ajustes.angulo;
-    u.uDensidad.value = ajustes.densidad;
-    u.uBandas.value = ajustes.bandas ? 1 : 0;
-    u.uSemitono.value = ajustes.semitono ? 1 : 0;
-    u.uGrano.value = ajustes.grano ? 1 : 0;
-    u.uDesregistro.value = ajustes.desregistro ? 1 : 0;
+    // se leen los ajustes vivos en cada fotograma: así el panel los mueve en
+    // caliente sin que nada tenga que volver a renderizar
+    const m = ajustesDireccion.mundo;
+    u.uFondo.value.set(...aVec3(fondo));
+    u.uAngulo.value = m.angulo;
+    u.uDensidad.value = m.densidad;
+    u.uBandas.value = m.bandas ? 1 : 0;
+    u.uSemitono.value = m.semitono ? 1 : 0;
+    u.uGrano.value = m.grano ? 1 : 0;
+    u.uDesregistro.value = m.desregistro ? 1 : 0;
   });
 
   return (
