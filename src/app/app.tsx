@@ -29,7 +29,7 @@ export function App() {
           <PlataformaCamara encuadre={encuadre} />
           <TipografiaCompuesta palabras={palabrasPorDefecto} />
           <SujetoProvisional />
-          <CapaRecortes />
+          <CapaRecortes clave={indice} />
         </Canvas>
       </div>
       <div className="recorrido" style={{ height: `${encuadres.length * 100}vh` }} />
