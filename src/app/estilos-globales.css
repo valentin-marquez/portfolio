@@ -7,20 +7,27 @@
   box-sizing: border-box;
 }
 
-html,
-body,
-#raiz {
-  height: 100%;
-}
-
 body {
   margin: 0;
   background: var(--tinta);
   color: var(--crema);
   font-family: "Archivo", "Helvetica Neue", Arial, sans-serif;
-  overflow: hidden;
 }
 
-canvas {
+/* el lienzo no se mueve: lo que se desplaza es el recorrido, y eso solo
+   avanza el índice de encuadre */
+.lienzo-fijo {
+  position: fixed;
+  inset: 0;
+}
+
+.lienzo-fijo canvas {
   display: block;
+}
+
+/* altura de scroll: una pantalla por parada */
+.recorrido {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
 }

@@ -14,7 +14,7 @@ uniform float uDesregistro;
 uniform vec3 uTinta;
 uniform vec3 uCrema;
 uniform vec3 uMostaza;
-uniform vec3 uNaranja;
+uniform vec3 uFondo;      // color de la parada actual: corta de golpe, sin transición
 
 mat2 giro(float grados) {
   float a = radians(grados);
@@ -50,7 +50,7 @@ vec3 mundo(vec2 uv) {
            : i == 1 ? uTinta
            : i == 2 ? uMostaza
            : i == 3 ? uTinta
-                    : uNaranja;
+                    : uFondo;
     float borde = abs(fract(f) - 0.5);
     col = mix(uTinta, c, smoothstep(0.47, 0.43, borde));
   }

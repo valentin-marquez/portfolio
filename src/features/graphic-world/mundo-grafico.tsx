@@ -8,6 +8,8 @@ import vertice from "./mundo-grafico.vert.glsl?raw";
 
 /** Los ajustes del mundo gráfico, para que el panel de dirección los toque en vivo. */
 export type AjustesMundo = {
+  /** Color de la parada actual, en hexadecimal. Corta a la vez que la cámara. */
+  fondo: string;
   angulo: number;
   densidad: number;
   bandas: boolean;
@@ -17,6 +19,7 @@ export type AjustesMundo = {
 };
 
 export const ajustesPorDefecto: AjustesMundo = {
+  fondo: paleta.naranja,
   angulo: 22,
   densidad: 34,
   bandas: true,
@@ -41,7 +44,8 @@ function crearUniforms() {
     uTinta: { value: new Vector3(...aVec3(paleta.tinta)) },
     uCrema: { value: new Vector3(...aVec3(paleta.cremaLuz)) },
     uMostaza: { value: new Vector3(...aVec3(paleta.mostaza)) },
-    uNaranja: { value: new Vector3(...aVec3(paleta.naranja)) },
+    // el color de la parada: cambia de golpe en el corte, sin muelle ni transición
+    uFondo: { value: new Vector3(...aVec3(paleta.naranja)) },
   };
 }
 
@@ -69,6 +73,7 @@ export function MundoGrafico({ ajustes }: { ajustes: AjustesMundo }) {
 
     u.uTiempo.value += delta;
     renderizador.getDrawingBufferSize(u.uResolucion.value);
+    u.uFondo.value.set(...aVec3(ajustes.fondo));
     u.uAngulo.value = ajustes.angulo;
     u.uDensidad.value = ajustes.densidad;
     u.uBandas.value = ajustes.bandas ? 1 : 0;
