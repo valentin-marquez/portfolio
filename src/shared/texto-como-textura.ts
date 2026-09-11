@@ -12,6 +12,8 @@ import { relacionAspecto, tamañoQueEncaja } from "./medida-texto";
  * así que la palabra tiene que ir duplicada en un nodo oculto.
  */
 
+export const FAMILIA_DISPLAY = '"Anton", "Arial Narrow", sans-serif';
+
 const LADO = 1024;
 const TAMAÑO_MAXIMO = 300;
 const MARGEN = 0.9;

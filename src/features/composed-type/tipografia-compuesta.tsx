@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { DoubleSide } from "three";
 import { paleta } from "@/shared/paleta";
-import { esperarFuente, type TexturaDeTexto, textoComoTextura } from "./texto-como-textura";
-
-const FAMILIA = '"Anton", "Arial Narrow", sans-serif';
+import {
+  esperarFuente,
+  FAMILIA_DISPLAY,
+  type TexturaDeTexto,
+  textoComoTextura,
+} from "@/shared/texto-como-textura";
 
 export type PalabraCompuesta = {
   texto: string;
@@ -28,9 +31,9 @@ export function TipografiaCompuesta({ palabras }: { palabras: readonly PalabraCo
   useEffect(() => {
     let vigente = true;
 
-    esperarFuente(FAMILIA).then(() => {
+    esperarFuente(FAMILIA_DISPLAY).then(() => {
       if (!vigente) return;
-      setTexturas(palabras.map((p) => textoComoTextura(p.texto.toUpperCase(), FAMILIA)));
+      setTexturas(palabras.map((p) => textoComoTextura(p.texto.toUpperCase(), FAMILIA_DISPLAY)));
     });
 
     return () => {

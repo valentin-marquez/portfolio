@@ -13,11 +13,17 @@ import { SondaDev } from "@/features/direction-panel/sonda-dev";
 import { SujetoFlotante } from "@/features/floating-subject/sujeto-flotante";
 import { MundoGrafico } from "@/features/graphic-world/mundo-grafico";
 import { paleta } from "@/shared/paleta";
+import { CapaAccesible } from "./capa-accesible";
 
 export function App() {
   const indice = useIndiceEncuadre();
   const encuadre = encuadrePorIndice(indice);
   const [textos, setTextos] = useState(() => palabrasPorDefecto.map((p) => ({ texto: p.texto })));
+
+  // Las etiquetas del menú son maniquí, igual que las palabras grandes: qué dicen
+  // depende del concepto (decisión abierta #1). Nombrar la parada a la que llevan
+  // es al menos honesto sobre lo que hace el botón.
+  const etiquetasMenu = useMemo(() => encuadres.map((e) => e.nombre), []);
 
   // Las palabras son lo único del panel que sí pasa por React: cambiar el texto
   // obliga a regenerar la textura, y eso es un efecto, no una lectura por fotograma.
@@ -44,10 +50,12 @@ export function App() {
           <PlataformaCamara encuadre={encuadre} />
           <TipografiaCompuesta palabras={palabras} />
           <SujetoFlotante />
-          <CapaRecortes clave={indice} />
+          <CapaRecortes clave={indice} etiquetas={etiquetasMenu} />
           {import.meta.env.DEV && <SondaDev />}
         </Canvas>
       </div>
+
+      <CapaAccesible indiceActual={indice} palabras={palabras.map((p) => p.texto)} />
 
       <div className="recorrido" style={{ height: `${encuadres.length * 100}vh` }} />
 

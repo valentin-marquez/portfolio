@@ -48,8 +48,14 @@ e indiferente, el otro seco y a golpes. Mezclarlos sin criterio no da las dos co
 blandos con sobreimpulso largo, la rotación de 60-90 s, el drone, el material metálico, y el
 concepto del objeto perdido.
 
-**Lo que sobrevivió:** el sujeto y su pipeline completa, el stack técnico entero, la tipografía
-enorme como eje de composición, y el scroll como único control del visitante.
+**Lo que sobrevivió:** el sujeto y su pipeline completa, el stack técnico entero y la tipografía
+enorme como eje de composición.
+
+**Superado después:** "el scroll como único control del visitante" venía del mirón de la dirección
+descartada y ya no aplica. La tira de menú es navegación de verdad: cada barra corta a su parada.
+El scroll sigue funcionando igual — la barra es un atajo, no un sustituto. En Persona los menús
+**son** el protagonista, y unas barras con texto que no hacen nada prometen algo que la pieza no
+cumple.
 
 ### Dirección B — vigente: escena 3D en clave gráfica
 

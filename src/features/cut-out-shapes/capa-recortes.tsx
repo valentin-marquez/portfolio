@@ -1,8 +1,16 @@
 import { createPortal, useFrame, useThree } from "@react-three/fiber";
 import gsap from "gsap";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Group, MathUtils, type PerspectiveCamera } from "three";
+import { encuadres } from "@/features/camera-cuts/encuadres";
 import { paleta } from "@/shared/paleta";
+import {
+  esperarFuente,
+  FAMILIA_DISPLAY,
+  type TexturaDeTexto,
+  textoComoTextura,
+} from "@/shared/texto-como-textura";
+import { BarraMenu } from "./barra-menu";
 import { coreografia, retardoDeBarra } from "./coreografia-entrada";
 import { interiorDesigual, rectanguloIrregular } from "./forma-recortada";
 import { Recorte } from "./recorte";
@@ -30,7 +38,13 @@ function sinMovimiento(): boolean {
  * Cada forma lleva su propia inclinación: el ángulo holandés de la cámara aquí
  * no llega, porque estas piezas van con ella.
  */
-export function CapaRecortes({ clave }: { clave: number }) {
+export function CapaRecortes({
+  clave,
+  etiquetas,
+}: {
+  clave: number;
+  etiquetas: readonly string[];
+}) {
   const camara = useThree((estado) => estado.camera) as PerspectiveCamera;
   const escena = useThree((estado) => estado.scene);
   const grupo = useRef<Group>(null);
@@ -73,6 +87,35 @@ export function CapaRecortes({ clave }: { clave: number }) {
       }),
     [],
   );
+
+  const [texturas, setTexturas] = useState<TexturaDeTexto[] | null>(null);
+
+  useEffect(() => {
+    let vigente = true;
+    esperarFuente(FAMILIA_DISPLAY).then(() => {
+      if (!vigente) return;
+      setTexturas(etiquetas.map((e) => textoComoTextura(e.toUpperCase(), FAMILIA_DISPLAY)));
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [etiquetas]);
+
+  useEffect(
+    () => () => {
+      for (const t of texturas ?? []) t.textura.dispose();
+    },
+    [texturas],
+  );
+
+  const saltarA = useCallback((indice: number) => {
+    const recorrido = document.documentElement.scrollHeight - window.innerHeight;
+    // al centro de la franja de esa parada, no a su borde
+    window.scrollTo({
+      top: (recorrido * (indice + 0.5)) / encuadres.length,
+      behavior: "smooth",
+    });
+  }, []);
 
   // La entrada se relanza en cada corte de encuadre.
   useEffect(() => {
@@ -126,8 +169,13 @@ export function CapaRecortes({ clave }: { clave: number }) {
             }}
           >
             <group position={[ANCHO_BARRA / 2, 0, 0]}>
-              <Recorte color={paleta.cremaLuz} orden={10 + i * 2} puntos={barra.exterior} />
-              <Recorte color={paleta.tinta} orden={11 + i * 2} puntos={barra.interior} />
+              <BarraMenu
+                activa={i === clave}
+                alPulsar={() => saltarA(i)}
+                barra={{ ...barra, ancho: ANCHO_BARRA }}
+                etiqueta={texturas?.[i] ?? null}
+                orden={10 + i * 3}
+              />
             </group>
           </group>
         </group>
