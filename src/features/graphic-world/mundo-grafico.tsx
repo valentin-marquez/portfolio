@@ -83,7 +83,11 @@ export function MundoGrafico({ ajustes }: { ajustes: AjustesMundo }) {
   });
 
   return (
-    <ScreenQuad>
+    // renderOrder -1: el fondo SIEMPRE se dibuja primero. Sin esto compite en el
+    // ordenador de opacos con el sujeto —están casi a la misma distancia de
+    // cámara— y el resultado es una moneda al aire: unas veces queda detrás y
+    // otras lo tapa entero.
+    <ScreenQuad renderOrder={-1}>
       <shaderMaterial
         ref={material}
         depthTest={false}

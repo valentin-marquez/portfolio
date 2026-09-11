@@ -7,7 +7,8 @@ import {
   TipografiaCompuesta,
 } from "@/features/composed-type/tipografia-compuesta";
 import { CapaRecortes } from "@/features/cut-out-shapes/capa-recortes";
-import { SujetoProvisional } from "@/features/floating-subject/sujeto-provisional";
+import { SondaDev } from "@/features/direction-panel/sonda-dev";
+import { SujetoFlotante } from "@/features/floating-subject/sujeto-flotante";
 import { ajustesPorDefecto, MundoGrafico } from "@/features/graphic-world/mundo-grafico";
 import { paleta } from "@/shared/paleta";
 
@@ -28,8 +29,9 @@ export function App() {
           <MundoGrafico ajustes={{ ...ajustesPorDefecto, fondo: paleta[encuadre.fondo] }} />
           <PlataformaCamara encuadre={encuadre} />
           <TipografiaCompuesta palabras={palabrasPorDefecto} />
-          <SujetoProvisional />
+          <SujetoFlotante />
           <CapaRecortes clave={indice} />
+          {import.meta.env.DEV && <SondaDev />}
         </Canvas>
       </div>
       <div className="recorrido" style={{ height: `${encuadres.length * 100}vh` }} />
