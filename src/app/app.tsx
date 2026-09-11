@@ -2,6 +2,10 @@ import { Canvas } from "@react-three/fiber";
 import { encuadrePorIndice, encuadres } from "@/features/camera-cuts/encuadres";
 import { PlataformaCamara } from "@/features/camera-cuts/plataforma-camara";
 import { useIndiceEncuadre } from "@/features/camera-cuts/use-indice-encuadre";
+import {
+  palabrasPorDefecto,
+  TipografiaCompuesta,
+} from "@/features/composed-type/tipografia-compuesta";
 import { CapaRecortes } from "@/features/cut-out-shapes/capa-recortes";
 import { SujetoProvisional } from "@/features/floating-subject/sujeto-provisional";
 import { ajustesPorDefecto, MundoGrafico } from "@/features/graphic-world/mundo-grafico";
@@ -23,6 +27,7 @@ export function App() {
         >
           <MundoGrafico ajustes={{ ...ajustesPorDefecto, fondo: paleta[encuadre.fondo] }} />
           <PlataformaCamara encuadre={encuadre} />
+          <TipografiaCompuesta palabras={palabrasPorDefecto} />
           <SujetoProvisional />
           <CapaRecortes />
         </Canvas>

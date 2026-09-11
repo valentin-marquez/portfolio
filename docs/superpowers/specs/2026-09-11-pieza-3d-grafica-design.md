@@ -203,6 +203,16 @@ Derivado de una foto real del autor, estilizado.
 **Identidad final: abierta** (§7, #4). Nada depende de ella — la escena se dirige contra un
 placeholder y el `.glb` se enchufa después.
 
+### 3.0 Persona es inspiración, no regla
+
+Los valores medidos en `persona-im` —duraciones, escalas de partida, curvas, cómo se recortan
+las formas— son **un punto de partida documentado, no un canon**. Sirven para no empezar de cero
+y para entender *por qué* ese lenguaje funciona; en cuanto algo le vaya mejor a esta pieza, se
+cambia sin pedir permiso a nadie.
+
+Donde ya nos hemos separado a propósito: la paleta (crema, mostaza y naranja quemado en vez de
+rojo sobre negro), el sujeto (un personaje cozy con una maceta, no un ladrón elegante) y el tono.
+
 ### 3.1 Lo que se probó y se aprendió
 
 Tanda de 4 modelos por **text-to-3D** en Hunyuan3D, decimados e inspeccionados:
