@@ -22,9 +22,8 @@ const MODELO = "/sujeto.glb";
 
 /** Ajustes del sombreado, pensados para que el panel de dirección los toque. */
 export const celPorDefecto = {
-  /** Ver el comentario del fragmento: la textura del modelo actual no separa zonas. */
-  usarTextura: false,
-  niveles: 4,
+  /** El albedo del modelo llega remapeado a la paleta desde el taller. */
+  usarTextura: true,
   corteLuz: 0.32,
   corteSombra: -0.08,
   medio: 0.66,
@@ -78,7 +77,6 @@ export function SujetoFlotante() {
           // la luz entra desde la izquierda, en espacio de vista: aquí solo
           // decide dónde cae la banda de sombra, no el color
           uLuz: { value: new Vector3(-0.72, 0.42, 0.55) },
-          uNiveles: { value: celPorDefecto.niveles },
           uCorteLuz: { value: celPorDefecto.corteLuz },
           uCorteSombra: { value: celPorDefecto.corteSombra },
           uMedio: { value: celPorDefecto.medio },
