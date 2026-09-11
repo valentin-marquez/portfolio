@@ -18,6 +18,18 @@ diez segundos, ha fallado por bonita que sea.
 **Estado real:** tenemos un lenguaje visual potente y definido, y un sujeto que funciona.
 Todavía no tenemos qué dice la pieza. Ver §7, decisión abierta #1.
 
+### 0.1 Por qué 3D y no ilustración
+
+La pregunta es legítima, sobre todo viendo lo buena que es la referencia de dirección (§2.0):
+si una ilustración ya se ve así, ¿para qué el 3D?
+
+**Por la cámara, y solo por la cámara.** Una ilustración no se recorre, no rota, no se atraviesa
+y no responde al scroll. Todo lo que convierte esto en una pieza web en vez de un JPG vive en
+poder moverse por dentro.
+
+**Corolario honesto:** el día que se decida que el recorrido de cámara no aporta, la respuesta
+correcta no es "hagamos el 3D más bonito", es **no hacer 3D** — y ahorrarse semanas.
+
 ---
 
 ## 1. Historia de la decisión
@@ -53,6 +65,39 @@ contraste de un personaje cozy con una maceta dentro de un lenguaje agresivo.
 ---
 
 ## 2. Dirección visual
+
+### 2.0 Referencia de dirección
+
+**`docs/referencias/direccion-visual-key-art.png`**
+
+Es el objetivo. Todo lo que se construya se juzga contra esa imagen: si el navegador no se
+parece a eso, está mal.
+
+**Lo que establece:** contorno de tinta grueso, bandas de tono duras sin degradado, semitono
+sobre los planos, diagonales con nada alineado al eje, contrapicado dramático, y la paleta
+exacta — crema, mostaza, naranja quemado, carbón, con el verde del brote como único acento
+saturado.
+
+**Cómo se generó:** con el bloque de estilo de §2 sin línea de escena. El fondo — postes de
+luz, tendido eléctrico, edificios, andamios — lo inventó el generador. Esa deriva hacia lo
+urbano no estaba en ninguna de las cuatro direcciones propuestas y merece considerarse como
+una quinta: la calle en vez del cuarto (§7, #1).
+
+**Diferencias conocidas entre la ilustración y lo que dará el 3D:**
+
+| Qué | Por qué difiere | Plan |
+|---|---|---|
+| **Grosor de línea variable** | El casco invertido da grosor constante; la ilustración engorda y adelgaza la línea. **Es la diferencia más visible de las tres.** | Empezar modulando el grosor por distancia de cámara — una línea de shader, ~90% del efecto. Si no basta, pintar grosor en colores de vértice (técnica de Guilty Gear): control total, pero hay que pintar a mano sobre 60k triángulos. |
+| Pelo | Dibujado como formas planas puntiagudas; en 3D se leerá más redondo y blando. | Asumido. |
+| Trenzas del jersey | Dibujadas como línea; en el modelo son geometría real y se leerán como volumen. | Asumido. Los renders de prueba confirmaron que el volumen funciona. |
+
+**Dónde se hace el cel shading:** en **Three.js, en tiempo real**, no en Blender. `MeshToonMaterial`
+con un mapa de degradado de tres o cuatro píxeles da las bandas duras; el contorno sale del casco
+invertido. Blender solo necesita una previsualización aproximada para no trabajar a ciegas.
+
+También se guarda **`docs/referencias/personaje-referencia-frontal.png`**, la referencia frontal
+que alimenta la reconstrucción 3D (§3.2). Cumple otro propósito distinto: ésa se reconstruye,
+la de dirección solo se mira.
 
 ### 2.1 El truco central: el sujeto es 3D, el mundo es 2D
 
@@ -347,7 +392,18 @@ años a la deriva" era lo que daba sentido a todo. Ahora hay un lenguaje visual 
 definido que **todavía no tiene nada que decir**.
 
 Lo que hay para trabajar: un personaje cozy, derivado del autor, sosteniendo una planta. El
-espacio probablemente ya no es el escenario. Se explorará generando referencias visuales.
+espacio ya no es el escenario. Se explora generando referencias visuales.
+
+Cinco direcciones sobre la mesa, las cuatro primeras propuestas y la quinta aparecida sola en
+la referencia de dirección (§2.0):
+
+| | Dirección | Qué dice | Estado |
+|---|---|---|---|
+| 1 | **El jardinero dentro de la máquina** | Mantienes vivo algo orgánico dentro de una infraestructura fría. Es el trabajo en la FAO y la identidad técnica en la misma imagen. | Riesgo: metáfora muy transitada. |
+| 2 | **El recolector** | Recoges fragmentos dispersos y les das orden — Framerate destilado. | La única donde **el movimiento significa algo**: los cortes secos y el encaje son el contenido, no el estilo. |
+| 3 | **El cuarto** | Retrato hecho de objetos: escritorio, monitores, cables, plantas, desorden. | Recomendada. Resuelve el aburrimiento por densidad, da contenido a cada parada de cámara (y con ello cierra #2), y absorbe la dirección 1 entera. |
+| 4 | **Crecer a pesar de** | Persistencia: algo crece donde no debería. | La única con **transformación real** — el scroll entrega un cambio de estado. Riesgo: se aleja de lo cozy. |
+| 5 | **La calle** | Apareció sola al generar la referencia sin línea de escena: postes, tendido eléctrico, edificios, andamios. | Sin desarrollar. |
 
 **Nada más puede cerrarse hasta que esto se cierre.**
 

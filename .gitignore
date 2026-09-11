@@ -1,8 +1,6 @@
-# artefactos de utillaje y capturas de sesión
-.playwright-mcp/
-*.png
-*.txt
-
 # dependencias y build
 node_modules/
 dist/
+
+# artefactos de utillaje de sesión
+.playwright-mcp/
