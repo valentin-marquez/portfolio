@@ -1,0 +1,26 @@
+:root {
+  --tinta: #171717;
+  --crema: #f7deae;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#raiz {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--tinta);
+  color: var(--crema);
+  font-family: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+}

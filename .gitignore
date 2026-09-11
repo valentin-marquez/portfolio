@@ -4,3 +4,6 @@ dist/
 
 # artefactos de utillaje de sesión
 .playwright-mcp/
+
+# capturas de sesión
+shots/
