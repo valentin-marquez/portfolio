@@ -83,6 +83,26 @@ luz, tendido eléctrico, edificios, andamios — lo inventó el generador. Esa d
 urbano no estaba en ninguna de las cuatro direcciones propuestas y merece considerarse como
 una quinta: la calle en vez del cuarto (§7, #1).
 
+**Paleta, extraída de la propia imagen** (cuantización con fusión de familias; el semitono se
+promedia reduciendo la imagen antes de medir):
+
+| Familia | Luz | Medio | Sombra |
+|---|---|---|---|
+| **Crema** | `#f7deae` 13,8% | `#e6c281` 4,3% | `#aa8d5c` 3,3% |
+| **Ámbar** | `#f4b528` 8,4% | `#d39031` 1,7% | `#c65b1a` 6,7% |
+| **Tinta** | `#403931` 17,7% | — | `#171717` 42,6% |
+| **Verde** (acento) | `#288020` | — | `#616f3b` 1,6% |
+
+Dos hallazgos con consecuencias:
+
+- **El negro domina con el 42,6%.** Esto no es una página crema con líneas negras: es una pieza
+  **negra** con campos cálidos encima. El fondo por defecto de la web es oscuro.
+- **La paleta ya viene en bandas de luz/medio/sombra por familia.** No hay que inventar la rampa
+  del cel shading — los mapas de degradado salen directos de esta tabla.
+- El verde hay que buscarlo aparte: ocupa tan poca superficie que no entra en una cuantización
+  general, y el naranja es más saturado. **El acento es pequeño y no es el color más saturado
+  del cuadro** — el verde no grita, solo está. Mantenerlo así.
+
 **Diferencias conocidas entre la ilustración y lo que dará el 3D:**
 
 | Qué | Por qué difiere | Plan |
