@@ -103,6 +103,46 @@ for i in range(GRUPOS):
     marca = "  (acento)" if i == mas_cromatico else ""
     print(f"#{r:02x}{g:02x}{b:02x}  {luces[i]:6.3f} {cromas[i]:7.3f} {pct:6.1f}%  ->  {nombre}{marca}")
 
+def limpiar_zonas(indices, grupos, radio=2, pasadas=1):
+    """Consolida las zonas: quita el moteado y desdentella los bordes.
+
+    La cuantización trabaja píxel a píxel y no sabe nada de vecindad, así que
+    deja puntos sueltos y bordes deshilachados por toda la textura. En una pieza
+    cuyo lenguaje son planos de color con filo limpio, eso se ve como suciedad.
+
+    Se aplica un filtro de MODA, no de mediana: los índices de paleta son
+    categorías, no números, y promediarlos no significa nada. Para cada clase se
+    difumina su máscara con una caja y luego gana la clase con más presencia en
+    el vecindario.
+
+    El radio es pequeño a propósito. Con radio 3 y dos pasadas el moteado baja
+    más, pero el filtro se come los detalles pequeños: las pupilas desaparecen y
+    los ojos quedan en dos manchas. La cara ocupa poquísimo en el atlas, así que
+    un radio en píxeles la castiga mucho más que al jersey.
+    """
+    from PIL import ImageFilter
+
+    salida = indices
+    for _ in range(pasadas):
+        presencias = []
+        for clase in range(grupos):
+            mascara = Image.fromarray(((salida == clase) * 255).astype(np.uint8), "L")
+            difusa = mascara.filter(ImageFilter.BoxBlur(radio))
+            presencias.append(np.asarray(difusa, dtype=np.uint16))
+        salida = np.argmax(np.stack(presencias), axis=0).astype(np.uint8)
+    return salida
+
+
+def moteado(mapa):
+    """Porcentaje de pares de vecinos que cambian de zona."""
+    cambios = (mapa[1:, :] != mapa[:-1, :]).sum() + (mapa[:, 1:] != mapa[:, :-1]).sum()
+    return 100 * cambios / (mapa.shape[0] * mapa.shape[1] * 2)
+
+
+antes = moteado(indices)
+indices = limpiar_zonas(indices, GRUPOS)
+print(f"\nmoteado: {antes:.1f}% -> {moteado(indices):.1f}% de vecinos en zona distinta")
+
 remapeado = tabla[indices]
 Image.fromarray(remapeado, "RGB").save(BASE, optimize=True)
 print(f"\nescrito: {BASE}  ({BASE.stat().st_size / 1024:.0f} KB)")

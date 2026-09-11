@@ -140,7 +140,8 @@ solo crema y mostaza.
 
 | Qué | Por qué difiere | Plan |
 |---|---|---|
-| **Grosor de línea variable** | El casco invertido da grosor constante; la ilustración engorda y adelgaza la línea. **Es la diferencia más visible de las tres.** | Empezar modulando el grosor por distancia de cámara — una línea de shader, ~90% del efecto. Si no basta, pintar grosor en colores de vértice (técnica de Guilty Gear): control total, pero hay que pintar a mano sobre 60k triángulos. |
+| **Grosor de línea variable** | El casco invertido da grosor constante; la ilustración engorda y adelgaza la línea. | Modulando el grosor por distancia de cámara, o pintándolo en colores de vértice (técnica de Guilty Gear). **Pendiente: ver la fila siguiente.** |
+| **El contorno, de momento, está apagado** | Probado sobre el modelo real y **el casco invertido tampoco vale aquí**: infla la malla por sus normales, y las de un modelo generado por IA son irregulares, así que atraviesa la superficie por delante y mancha de tinta la cara y el contorno de las gafas. | Las dos técnicas de contorno que conocíamos fallan sobre esta topología por motivos distintos: la detección de bordes dibuja líneas donde no las hay, y el casco invertido sangra por delante. **El contorno está bloqueado hasta que haya una malla con topología decente**, no es cuestión de afinar parámetros. |
 | Pelo | Dibujado como formas planas puntiagudas; en 3D se leerá más redondo y blando. | Asumido. |
 | Trenzas del jersey | Dibujadas como línea; en el modelo son geometría real y se leerán como volumen. | Asumido. Los renders de prueba confirmaron que el volumen funciona. |
 
