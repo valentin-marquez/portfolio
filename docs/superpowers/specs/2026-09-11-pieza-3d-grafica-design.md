@@ -86,22 +86,49 @@ una quinta: la calle en vez del cuarto (§7, #1).
 **Paleta, extraída de la propia imagen** (cuantización con fusión de familias; el semitono se
 promedia reduciendo la imagen antes de medir):
 
-| Familia | Luz | Medio | Sombra |
-|---|---|---|---|
-| **Crema** | `#f7deae` 13,8% | `#e6c281` 4,3% | `#aa8d5c` 3,3% |
-| **Ámbar** | `#f4b528` 8,4% | `#d39031` 1,7% | `#c65b1a` 6,7% |
-| **Tinta** | `#403931` 17,7% | — | `#171717` 42,6% |
-| **Verde** (acento) | `#288020` | — | `#616f3b` 1,6% |
+Agrupación **verificada en OKLCH** (umbral de deriva de tono visible: 10°):
 
-Dos hallazgos con consecuencias:
+| Papel | Color | OKLCH | Superficie |
+|---|---|---|---|
+| **Fondo dominante** | `#171717` | `oklch(0.205 0 —)` | 42,6% |
+| **Masa oscura / textura** | `#403931` | `oklch(0.349 0.017 71.0)` | 17,7% |
+| **Crema — luz** | `#f7deae` | `oklch(0.910 0.068 83.6)` | 13,8% |
+| **Crema — medio** | `#e6c281` | `oklch(0.831 0.092 81.6)` | 4,3% |
+| **Crema — sombra** | `#aa8d5c` | `oklch(0.659 0.075 80.0)` | 3,3% |
+| **Mostaza** | `#f4b528` | `oklch(0.811 0.158 81.5)` | 8,4% |
+| **Naranja quemado** | `#c65b1a` | `oklch(0.595 0.154 46.5)` | 6,7% |
+| **Verde acento** | `#288020` | `oklch(0.528 0.155 141.9)` | pequeña |
+
+Hallazgos con consecuencias:
 
 - **El negro domina con el 42,6%.** Esto no es una página crema con líneas negras: es una pieza
   **negra** con campos cálidos encima. El fondo por defecto de la web es oscuro.
-- **La paleta ya viene en bandas de luz/medio/sombra por familia.** No hay que inventar la rampa
-  del cel shading — los mapas de degradado salen directos de esta tabla.
-- El verde hay que buscarlo aparte: ocupa tan poca superficie que no entra en una cuantización
-  general, y el naranja es más saturado. **El acento es pequeño y no es el color más saturado
-  del cuadro** — el verde no grita, solo está. Mantenerlo así.
+- **Solo el crema es una banda real** (deriva de tono 3,6°, L escalonada limpia). Una primera
+  agrupación metía mostaza y naranja quemado en la misma familia; la verificación en OKLCH la
+  desmintió — el tono salta 35°, de amarillo a naranja. **Son dos colores independientes con
+  papeles propios, no dos pasos de una rampa.**
+- **El verde no tiene banda.** El `#616f3b` que parecía su sombra tiene prácticamente la misma
+  luminosidad (0,517 frente a 0,528) y la mitad de croma: es otro color, no un escalón. El
+  acento es plano, pequeño y no es lo más saturado del cuadro — **el verde no grita, solo
+  está**. Mantenerlo así.
+- **Las rampas del cel shading hay que construirlas, no cosecharlas.** Solo el crema viene
+  servido. Para las demás familias se generan en OKLCH con tono constante y L escalonada, que
+  es además la única forma de que los mapas de degradado no tengan deriva de tono.
+- *Nota de método: el test de deriva de tono no aplica a colores con croma ~0. `#171717` tiene
+  croma 0,000, así que su matiz es un número sin significado.*
+
+**Contraste sobre el fondo `#171717`** (WCAG 2, no APCA):
+
+| Color | Ratio | Uso |
+|---|---|---|
+| crema `#f7deae` | 13,67:1 | AAA, apto para cualquier texto |
+| mostaza `#f4b528` | 9,81:1 | AAA, apto para cualquier texto |
+| naranja `#c65b1a` | 4,19:1 | **solo texto grande** |
+| verde `#288020` | 3,58:1 | **solo texto grande** |
+| tinta clara `#403931` | 1,58:1 | **nunca lleva texto** |
+
+Con la tipografía enorme del diseño, naranja y verde valen. Si alguna vez aparece texto pequeño,
+solo crema y mostaza.
 
 **Diferencias conocidas entre la ilustración y lo que dará el 3D:**
 
