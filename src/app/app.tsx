@@ -2,6 +2,7 @@ import { Canvas } from "@react-three/fiber";
 import { encuadrePorIndice, encuadres } from "@/features/camera-cuts/encuadres";
 import { PlataformaCamara } from "@/features/camera-cuts/plataforma-camara";
 import { useIndiceEncuadre } from "@/features/camera-cuts/use-indice-encuadre";
+import { CapaRecortes } from "@/features/cut-out-shapes/capa-recortes";
 import { SujetoProvisional } from "@/features/floating-subject/sujeto-provisional";
 import { ajustesPorDefecto, MundoGrafico } from "@/features/graphic-world/mundo-grafico";
 import { paleta } from "@/shared/paleta";
@@ -23,6 +24,7 @@ export function App() {
           <MundoGrafico ajustes={{ ...ajustesPorDefecto, fondo: paleta[encuadre.fondo] }} />
           <PlataformaCamara encuadre={encuadre} />
           <SujetoProvisional />
+          <CapaRecortes />
         </Canvas>
       </div>
       <div className="recorrido" style={{ height: `${encuadres.length * 100}vh` }} />

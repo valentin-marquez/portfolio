@@ -340,7 +340,8 @@ server sin perder nada.
 src/
   app/
   features/
-    graphic-world/        # capa 2D de fondo: bandas, tramas, recortes, cortes de color
+    graphic-world/        # capa 2D continua: bandas, trama, grano, desregistro
+    cut-out-shapes/       # capa 2D discreta: formas recortadas de doble contorno
     floating-subject/     # el modelo, su material cel, su casco invertido, su reloj propio
     camera-cuts/          # índice de encuadre, ángulos holandeses, muelle tenso
     composed-type/        # tipografía dentro de la escena
@@ -351,7 +352,21 @@ src/
 ```
 
 Ficheros en **kebab-case**, rutas que se explican solas, cada feature con sus componentes, sus
-hooks, su matemática y sus tests juntos.
+hooks, su matemática y sus tests juntos. Alias `@/` hacia `src`.
+
+**Los hooks conservan el prefijo inglés `use`** aunque el resto del código esté en castellano:
+no es estilo, la regla de React y las devtools detectan los hooks por el nombre.
+
+**El mundo 2D son dos capas que se hacen distinto**, y conviene no mezclarlas:
+
+| | Qué | Cómo |
+|---|---|---|
+| **Continuo** | fondo, trama, grano, desregistro | shader a pantalla completa |
+| **Discreto** | cajas, rabitos, barras de menú | geometría, colgada de la cámara |
+
+La capa discreta cuelga de la **cámara**, no de la escena, así que no obedece a la perspectiva ni
+a los cortes de encuadre, y cada forma lleva su propia inclinación. Consecuencia: **el ángulo
+holandés de la cámara no le llega** — solo afecta al sujeto, que sí vive en el mundo 3D.
 
 ### 4.3 Los tres relojes
 
