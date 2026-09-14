@@ -39,6 +39,16 @@ export function PanelDireccion({
     mundo.addBinding(ajustesDireccion.mundo, "grano");
     mundo.addBinding(ajustesDireccion.mundo, "desregistro");
 
+    const sujeto = pane.addFolder({ title: "Sujeto" });
+    sujeto.addBinding(ajustesDireccion.sujeto, "modo", {
+      options: { corte: 0, trama: 1, flujo: 2 },
+    });
+    sujeto.addBinding(ajustesDireccion.sujeto, "retencion", { min: 0.5, max: 8, step: 0.1 });
+    sujeto.addBinding(ajustesDireccion.sujeto, "gesto", { min: 0.05, max: 2, step: 0.05 });
+    sujeto.addBinding(ajustesDireccion.sujeto, "transicion", { min: 0, max: 1, step: 0.01 });
+    sujeto.addBinding(ajustesDireccion.sujeto, "densidadTrama", { min: 6, max: 120, step: 1 });
+    sujeto.addBinding(ajustesDireccion.sujeto, "escalaFlujo", { min: 0, max: 0.2, step: 0.005 });
+
     const texto = pane.addFolder({ title: "Tipografía" });
     const borrador = iniciales.current.map((p) => ({ ...p }));
     borrador.forEach((palabra, i) => {

@@ -65,25 +65,29 @@ ordenable, sin sorpresas (`lejos-0.png`, `lejos-1.png`, `cuerpo-0.png`...).
 anclas nombradas de `camera-cuts` no cambia — el plano se coloca donde antes
 se colocaba el origen del `.glb`.
 
-**Selección de frame atada al scroll continuo, no al índice de encuadre.**
-Cada ancla no es una imagen suelta: es un grupo de frames (el turnaround de
-esa parada). El progreso de scroll dentro del tramo hacia esa ancla decide
-qué frame, o qué mezcla entre dos frames contiguos, se muestra — el
-personaje da la sensación de girar o cambiar de gesto mientras se scrollea, y
-se asienta en una pose concreta al llegar a la parada. Reutiliza
-`progreso-scroll.ts`, que ya da ese 0-1 continuo; el índice entero de
-`use-indice-encuadre.ts` sigue decidiendo la ancla, pero ya no es lo único
-que lee el sujeto.
+**El sujeto tiene reloj propio; el scroll solo elige el ancla.** Cada ancla no
+es una imagen suelta: es un bucle idle de frames. El scroll decide en qué
+ancla está la cámara, y con ello qué juego de frames se usa — pero **no** qué
+frame se ve. Eso lo lleva el reloj del sujeto, que corre solo: una animación
+idle que solo existe si el visitante mueve el ratón no es idle.
 
-**Corrección a los tres relojes (§4.3 del diseño de origen):** el sujeto
-dejaba de tener "su propio tiempo, continuo, indiferente al visitante".
-Ahora depende del scroll igual que la cámara. El modelo pasa de tres relojes
-a dos:
+El bucle tiene **tiempos desiguales** a propósito: el frame 0 —la pose
+asentada— se retiene unos segundos y los demás pasan en un suspiro, así que
+lee como un gesto puntual (una respiración) y no como un metrónomo. Con
+`prefers-reduced-motion` se congela en el frame 0.
+
+**Los tres relojes del diseño de origen (§4.3) siguen siendo tres**, y el
+del sujeto vuelve a ser el que era:
 
 | Reloj | Quién lo mueve | Carácter |
 |---|---|---|
-| **Cámara + sujeto** | el scroll del visitante | por encaje, seco, con muelle tenso; el sujeto gira/gesticula en el tramo y se asienta en la parada |
+| **El sujeto** | su propio tiempo | bucle idle, continuo, indiferente al visitante |
+| **La cámara** | el scroll del visitante | por encaje, seco, con muelle tenso |
 | **La capa gráfica** | los cortes de cámara | a golpe, sincronizado |
+
+*Historia: el pivote del 14-09 llegó a atar el frame al scroll ("el scroll es
+el único motor"). Se probó y se descartó al verlo: el gesto solo existía
+mientras alguien scrolleaba, que es lo contrario de un idle.*
 
 ---
 
@@ -95,27 +99,37 @@ contorno de tinta — así que no hace falta rampa de tonos ni casco invertido
 en tiempo real.
 
 `mezcla-frames.vert.glsl` / `mezcla-frames.frag.glsl`: dos texturas
-(`frameActual`, `frameSiguiente`) y un uniform `mezcla` (0-1) que hace el
-cruce. Ese uniform lo mueve `cuadros-por-progreso.ts` mientras hay scroll
-dentro de un tramo, y GSAP para el asentamiento final al llegar a la
-parada — mismo criterio que ya usa `muelle-tenso.ts` para la cámara: corto,
-con sobreimpulso mínimo, nunca blando.
+(`uFrameActual`, `uFrameSiguiente`) y un uniform `uMezcla` (0-1) que el reloj
+idle mueve durante el paso de un frame al siguiente.
+
+**Tres modos de transición**, conmutables en caliente desde el panel
+(`uModo`), porque la elección es de dirección y se cierra mirando:
+
+| Modo | Qué hace | Coste |
+|---|---|---|
+| **corte** (0) | cambio seco, sin mezcla — flipbook clásico | ninguno |
+| **trama** (1) | cada píxel salta de un frame al otro según su punto de semitono. Binario: **nunca hay fantasma de doble exposición**, y el patrón es el mismo lenguaje gráfico del fondo | ninguno |
+| **flujo** (2) | morph real: un mapa de desplazamiento empuja los píxeles de una pose a la otra | un PNG de flujo por paso del bucle |
+
+El fundido por opacidad puro se probó primero y **se descartó**: cruzar dos
+dibujos con opacidad no da movimiento, da transparencia — el personaje se ve
+doble. Un ancla sin mapas de flujo cae automáticamente a **trama**.
 
 ---
 
 ## 4. Lógica nueva y testeable
 
-`cuadros-por-progreso.ts` — función pura:
+`ciclo-idle.ts` — función pura:
 
 ```
-(ancla, progreso 0-1) → { frameActual, frameSiguiente, mezcla }
+(tiempo, numFrames, ritmo) → { indiceActual, indiceSiguiente, transicion }
 ```
 
 Es la única lógica nueva de este cambio que vale la pena testear — mismo
 criterio que ya rige el proyecto (§4.6 del diseño de origen: los píxeles no
-se testean, la matemática sí). Se testea igual que `progreso-scroll.test.ts`
-y `encuadres.test.ts`: mapeo correcto en los extremos de cada tramo, y que la
-mezcla nunca salga de `[0, 1]`.
+se testean, la matemática sí). Se cubren los bordes del ciclo, la vuelta al
+primer frame, el corte seco (transición en 0) y el tiempo negativo, que en JS
+da un módulo negativo si no se corrige.
 
 ---
 

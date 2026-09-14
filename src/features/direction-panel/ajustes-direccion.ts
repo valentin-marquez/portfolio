@@ -18,6 +18,18 @@ export const ajustesDireccion = {
     grano: true,
     desregistro: true,
   },
+  sujeto: {
+    /** Cómo pasa de un frame al siguiente: 0 corte, 1 trama, 2 flujo. */
+    modo: 1,
+    /** Segundos que se retiene la pose asentada. */
+    retencion: 3,
+    /** Segundos que se retiene cada frame de gesto. */
+    gesto: 0.3,
+    /** Segundos que dura el paso de un frame al siguiente. */
+    transicion: 0.22,
+    escalaFlujo: 0.02,
+    densidadTrama: 34,
+  },
 };
 
 export type AjustesDireccion = typeof ajustesDireccion;

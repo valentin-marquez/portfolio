@@ -28,21 +28,3 @@ export function indiceDesdeProgreso(progreso: number, paradas: number): number {
   const p = recortar(progreso, 0, 1);
   return Math.min(Math.floor(p * paradas), paradas - 1);
 }
-
-/**
- * Progreso global → progreso local dentro del tramo de la parada activa.
- *
- * `cuadrosPorProgreso` necesita saber cuánto se ha recorrido DENTRO del tramo
- * de la ancla activa, no en todo el recorrido — cada franja ocupa 1/paradas
- * del progreso global (mismo reparto que `indiceDesdeProgreso`).
- */
-export function progresoLocalDesdeGlobal(
-  progreso: number,
-  paradas: number,
-  indice: number,
-): number {
-  if (paradas <= 0) return 0;
-  const ancho = 1 / paradas;
-  const inicio = indice * ancho;
-  return recortar((progreso - inicio) / ancho, 0, 1);
-}
