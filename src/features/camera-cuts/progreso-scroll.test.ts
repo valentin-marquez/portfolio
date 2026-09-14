@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { indiceDesdeProgreso, progresoDesdeScroll } from "./progreso-scroll";
+import { indiceDesdeProgreso, progresoDesdeScroll, progresoLocalDesdeGlobal } from "./progreso-scroll";
 
 describe("progresoDesdeScroll", () => {
   test("el principio del recorrido es 0 y el final es 1", () => {
@@ -44,5 +44,28 @@ describe("indiceDesdeProgreso", () => {
 
   test("con una sola parada siempre devuelve 0", () => {
     expect(indiceDesdeProgreso(0.7, 1)).toBe(0);
+  });
+});
+
+describe("progresoLocalDesdeGlobal", () => {
+  test("al entrar en el tramo el progreso local es 0", () => {
+    expect(progresoLocalDesdeGlobal(0.25, 4, 1)).toBeCloseTo(0, 6);
+  });
+
+  test("a mitad del tramo el progreso local es 0.5", () => {
+    expect(progresoLocalDesdeGlobal(0.375, 4, 1)).toBeCloseTo(0.5, 6);
+  });
+
+  test("al final del tramo el progreso local es 1", () => {
+    expect(progresoLocalDesdeGlobal(0.5, 4, 1)).toBeCloseTo(1, 6);
+  });
+
+  test("recorta si el progreso global cae fuera del tramo de esa ancla", () => {
+    expect(progresoLocalDesdeGlobal(0.1, 4, 1)).toBe(0);
+    expect(progresoLocalDesdeGlobal(0.9, 4, 1)).toBe(1);
+  });
+
+  test("sin paradas devuelve 0 en vez de dividir por cero", () => {
+    expect(progresoLocalDesdeGlobal(0.5, 0, 0)).toBe(0);
   });
 });
