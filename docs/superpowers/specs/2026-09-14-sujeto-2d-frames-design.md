@@ -36,13 +36,12 @@ dirección a la que se planee volver.
 ## 1. Pipeline de assets — krea.ai
 
 Punto de partida: `docs/referencias/direccion-visual-key-art.png` (la misma
-referencia que ya fijaba la dirección visual). Con **Krea 2**:
+referencia que ya fijaba la dirección visual).
 
-1. **Aislar la figura.** Edición generativa (Nano Banana / Flux Kontext /
-   Qwen, los modelos de edición que trae Krea) sobre la key art: quitar el
+1. **Aislar la figura**, con edición de imagen iterativa (ChatGPT): quitar el
    fondo urbano — postes, tendido, edificios — y dejar solo el personaje con
-   fondo transparente.
-2. **Generar el character sheet.** Con la figura aislada como referencia de
+   fondo transparente (o blanco, si hay que recortarlo después a mano).
+2. **Generar el character sheet en Krea 2.** Con la figura aislada como referencia de
    identidad, pedir el turnaround de ángulos (y grid de expresión si hace
    falta más adelante) que cubra las anclas de cámara existentes: `lejos`,
    `cuerpo`, `hombro`, `cara`. Krea 2 está pensado justo para esto — mantiene
