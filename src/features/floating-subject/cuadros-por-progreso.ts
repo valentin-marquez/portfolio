@@ -1,9 +1,11 @@
 /**
  * Progreso local dentro de un tramo (0-1) → qué par de frames mezclar.
  *
- * Cada ancla trae un turnaround de N frames: el primero es la llegada al
- * tramo, el último la pose asentada. El progreso local escala ese rango — en
- * 0 se ve el primer frame puro, en 1 el último frame puro.
+ * Cada ancla trae un turnaround de N frames: el 0 es la pose asentada de esa
+ * parada (la que se ve casi todo el tramo), el último es un frame de tránsito
+ * que apenas se alcanza justo antes del corte a la siguiente ancla. El
+ * progreso local escala ese rango — en 0 se ve el primer frame puro, en 1 el
+ * último frame puro.
  */
 export type CuadrosFrames = {
   indiceActual: number;

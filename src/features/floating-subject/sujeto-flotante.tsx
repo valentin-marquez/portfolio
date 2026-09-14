@@ -91,7 +91,7 @@ export function SujetoFlotante() {
   });
 
   return (
-    <Billboard position={[0, 0.42, 0]}>
+    <Billboard position={[0, 0.42, 0]} lockZ>
       <mesh>
         <planeGeometry args={[ANCHO, ALTO]} />
         <shaderMaterial
@@ -99,6 +99,7 @@ export function SujetoFlotante() {
           fragmentShader={mezclaFragmento}
           vertexShader={mezclaVertice}
           transparent
+          premultipliedAlpha
           uniforms={iniciales}
         />
       </mesh>
