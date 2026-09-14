@@ -19,16 +19,16 @@ export const ajustesDireccion = {
     desregistro: true,
   },
   sujeto: {
-    /** Cómo pasa de un frame al siguiente: 0 corte, 1 trama, 2 flujo. */
-    modo: 1,
     /** Segundos que se retiene la pose asentada. */
-    retencion: 3,
-    /** Segundos que se retiene cada frame de gesto. */
-    gesto: 0.3,
-    /** Segundos que dura el paso de un frame al siguiente. */
-    transicion: 0.22,
-    escalaFlujo: 0.08,
-    densidadTrama: 34,
+    retencion: 3.4,
+    /** Segundos que dura cada dibujo de gesto. Corto: se lee como parpadeo. */
+    gesto: 0.1,
+    /** Amplitud del vaivén vertical, en unidades de mundo. */
+    alto: 0.03,
+    /** Amplitud de la respiración, como fracción de la escala. */
+    respiracion: 0.015,
+    /** Amplitud del balanceo, en grados. */
+    balanceo: 1.6,
   },
 };
 

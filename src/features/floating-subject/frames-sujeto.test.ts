@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { encuadres } from "@/features/camera-cuts/encuadres";
-import { flujosPorAncla, framesPorAncla } from "./frames-sujeto";
+import { framesPorAncla } from "./frames-sujeto";
 
 describe("framesPorAncla", () => {
   test("cada ancla del recorrido tiene su set de frames", () => {
@@ -23,24 +23,6 @@ describe("framesPorAncla", () => {
         const archivo = join(process.cwd(), "public", ruta.replace(/^\//, ""));
         expect(existsSync(archivo)).toBe(true);
       }
-    }
-  });
-});
-
-describe("flujosPorAncla", () => {
-  test("cada mapa referenciado existe en public/", () => {
-    for (const flujos of Object.values(flujosPorAncla)) {
-      for (const ruta of flujos) {
-        const archivo = join(process.cwd(), "public", ruta.replace(/^\//, ""));
-        expect(existsSync(archivo)).toBe(true);
-      }
-    }
-  });
-
-  test("hay un mapa por paso del bucle del ancla", () => {
-    // el mapa i lleva del frame i al i+1, así que hacen falta tantos como frames
-    for (const [ancla, flujos] of Object.entries(flujosPorAncla)) {
-      expect(flujos.length).toBe(framesPorAncla[ancla]?.length);
     }
   });
 });

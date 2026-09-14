@@ -98,38 +98,54 @@ cel-shading horneado — viene del mismo estilo que la key art, con su propio
 contorno de tinta — así que no hace falta rampa de tonos ni casco invertido
 en tiempo real.
 
-`mezcla-frames.vert.glsl` / `mezcla-frames.frag.glsl`: dos texturas
-(`uFrameActual`, `uFrameSiguiente`) y un uniform `uMezcla` (0-1) que el reloj
-idle mueve durante el paso de un frame al siguiente.
+**No hay shader propio.** El sujeto es un `MeshBasicMaterial` con `alphaTest`:
+el arte ya trae el cel-shading y el contorno horneados, el recorte es duro, y
+con el corte seco solo hace falta una textura a la vez. El `alphaTest`
+además devuelve al plano el comportamiento en el buffer de profundidad que
+tenía la malla.
 
-**Tres modos de transición**, conmutables en caliente desde el panel
-(`uModo`), porque la elección es de dirección y se cierra mirando:
+**El dibujo corta, nunca funde.** Se probaron tres transiciones y las tres se
+descartaron, en este orden:
 
-| Modo | Qué hace | Coste |
-|---|---|---|
-| **corte** (0) | cambio seco, sin mezcla — flipbook clásico | ninguno |
-| **trama** (1) | cada píxel salta de un frame al otro según su punto de semitono. Binario: **nunca hay fantasma de doble exposición**, y el patrón es el mismo lenguaje gráfico del fondo | ninguno |
-| **flujo** (2) | morph real: un mapa de desplazamiento empuja los píxeles de una pose a la otra | un PNG de flujo por paso del bucle |
+| Intento | Por qué se cayó |
+|---|---|
+| **Fundido por opacidad** | cruzar dos dibujos con opacidad no da movimiento, da transparencia: el personaje se ve doble |
+| **Trama de semitono** | binario, así que sin fantasma — pero es un *disolvido*, un recurso de montaje de vídeo, no de animación: el personaje se deshace en puntos |
+| **Morph por flujo óptico** | deforma de verdad, pero sobre dibujos donde el pelo se redibuja en cada frame queda plastilina, y se come los detalles finos (las gafas) |
 
-El fundido por opacidad puro se probó primero y **se descartó**: cruzar dos
-dibujos con opacidad no da movimiento, da transparencia — el personaje se ve
-doble. Un ancla sin mapas de flujo cae automáticamente a **trama**.
+La conclusión, que es la que rige: **con tres dibujos, cualquier interpolación
+se lee como efecto en vez de como movimiento.** La animación 2D no interpola
+entre poses, cambia de dibujo — y lo que mantiene vivo al sujeto entre corte y
+corte no es la transición, es la **flotación del plano** (§3.1). Los dibujos
+de gesto duran ~0,1 s: a esa velocidad el ojo no registra un cambio de imagen,
+registra un gesto.
+
+*Si algún día se quiere animación dibujada de verdad, el camino no es un
+shader mejor: son más dibujos intermedios.*
+
+### 3.1 La flotación
+
+`flotacion.ts` da el movimiento continuo del plano: vaivén vertical,
+respiración de escala y balanceo de un par de grados. Todo **oscila, no se
+integra** — sumar un incremento por fotograma acumula sin límite y el sujeto
+acaba a la deriva. Las tres frecuencias son inconmensurables entre sí, así que
+el conjunto no repite nunca el mismo instante.
 
 ---
 
 ## 4. Lógica nueva y testeable
 
-`ciclo-idle.ts` — función pura:
+Dos funciones puras, que es lo único de este cambio que vale la pena testear —
+mismo criterio que ya rige el proyecto (§4.6 del diseño de origen: los píxeles
+no se testean, la matemática sí):
 
-```
-(tiempo, numFrames, ritmo) → { indiceActual, indiceSiguiente, transicion }
-```
-
-Es la única lógica nueva de este cambio que vale la pena testear — mismo
-criterio que ya rige el proyecto (§4.6 del diseño de origen: los píxeles no
-se testean, la matemática sí). Se cubren los bordes del ciclo, la vuelta al
-primer frame, el corte seco (transición en 0) y el tiempo negativo, que en JS
-da un módulo negativo si no se corrige.
+- `ciclo-idle.ts` — `(tiempo, numFrames, ritmo) → índice`. Se cubren los bordes
+  del ciclo, la vuelta al primer dibujo y el tiempo negativo, que en JS da un
+  módulo negativo si no se corrige.
+- `flotacion.ts` — `(tiempo, ajuste) → { alto, escala, giro }`. Lo que hay que
+  vigilar es que **oscile y no se integre**: el test barre media hora de tiempo
+  simulado y comprueba que nunca se sale de la amplitud. Es el fallo que ya
+  ocurrió una vez con la deriva del sujeto 3D.
 
 ---
 
