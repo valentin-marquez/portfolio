@@ -39,18 +39,6 @@ export function PanelDireccion({
     mundo.addBinding(ajustesDireccion.mundo, "grano");
     mundo.addBinding(ajustesDireccion.mundo, "desregistro");
 
-    const cel = pane.addFolder({ title: "Cel shading" });
-    cel.addBinding(ajustesDireccion.cel, "usarTextura");
-    cel.addBinding(ajustesDireccion.cel, "corteLuz", { min: -1, max: 1, step: 0.01 });
-    cel.addBinding(ajustesDireccion.cel, "corteSombra", { min: -1, max: 1, step: 0.01 });
-    cel.addBinding(ajustesDireccion.cel, "medio", { min: 0, max: 1, step: 0.01 });
-    cel.addBinding(ajustesDireccion.cel, "sombra", { min: 0, max: 1, step: 0.01 });
-    cel.addBinding(ajustesDireccion.cel, "grosorContorno", { min: 0, max: 0.05, step: 0.001 });
-
-    const sujeto = pane.addFolder({ title: "Sujeto" });
-    sujeto.addBinding(ajustesDireccion.sujeto, "giro", { min: 0, max: 1, step: 0.01 });
-    sujeto.addBinding(ajustesDireccion.sujeto, "deriva", { min: 0, max: 0.4, step: 0.005 });
-
     const texto = pane.addFolder({ title: "Tipografía" });
     const borrador = iniciales.current.map((p) => ({ ...p }));
     borrador.forEach((palabra, i) => {

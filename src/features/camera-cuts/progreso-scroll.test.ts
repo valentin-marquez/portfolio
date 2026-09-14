@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { indiceDesdeProgreso, progresoDesdeScroll, progresoLocalDesdeGlobal } from "./progreso-scroll";
+import {
+  indiceDesdeProgreso,
+  progresoDesdeScroll,
+  progresoLocalDesdeGlobal,
+} from "./progreso-scroll";
 
 describe("progresoDesdeScroll", () => {
   test("el principio del recorrido es 0 y el final es 1", () => {
