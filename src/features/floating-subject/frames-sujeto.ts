@@ -32,4 +32,6 @@ export const framesPorAncla: Record<string, readonly string[]> = {
  * aterrizan aquí los PNG. Un ancla sin mapas cae al modo de trama, que no
  * necesita ninguno.
  */
-export const flujosPorAncla: Record<string, readonly string[]> = {};
+export const flujosPorAncla: Record<string, readonly string[]> = {
+  lejos: ["/sujeto/flujo-lejos-0.png", "/sujeto/flujo-lejos-1.png", "/sujeto/flujo-lejos-2.png"],
+};

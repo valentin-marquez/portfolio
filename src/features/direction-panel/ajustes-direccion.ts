@@ -27,7 +27,7 @@ export const ajustesDireccion = {
     gesto: 0.3,
     /** Segundos que dura el paso de un frame al siguiente. */
     transicion: 0.22,
-    escalaFlujo: 0.02,
+    escalaFlujo: 0.08,
     densidadTrama: 34,
   },
 };

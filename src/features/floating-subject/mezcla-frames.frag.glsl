@@ -23,10 +23,13 @@ void main() {
   vec2 uvB = vUv;
 
   if (uModo == 2) {
-    // el mapa guarda el desplazamiento en 0..1; aquí vuelve a -1..1
+    // el mapa guarda en 0..1 el desplazamiento del frame actual al siguiente;
+    // aquí vuelve a -1..1. Se muestrea HACIA ATRÁS: el punto que en el morph
+    // está en vUv viene de vUv - d·t en el frame actual, y de vUv + d·(1-t) en
+    // el siguiente. Con el signo al revés las poses se separan en vez de juntarse.
     vec2 desplazamiento = (texture2D(uFlujo, vUv).rg * 2.0 - 1.0) * uEscalaFlujo;
-    uvA = vUv + desplazamiento * uMezcla;
-    uvB = vUv - desplazamiento * (1.0 - uMezcla);
+    uvA = vUv - desplazamiento * uMezcla;
+    uvB = vUv + desplazamiento * (1.0 - uMezcla);
   }
 
   vec4 actual = texture2D(uFrameActual, uvA);
