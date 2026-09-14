@@ -1,140 +1,109 @@
-import { useGLTF } from "@react-three/drei";
+import { Billboard, useTexture } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
+import { NoColorSpace, type ShaderMaterial, type Texture } from "three";
+import { encuadres } from "@/features/camera-cuts/encuadres";
 import {
-  BackSide,
-  type Group,
-  type Mesh,
-  type MeshStandardMaterial,
-  NoColorSpace,
-  type Object3D,
-  ShaderMaterial,
-  type Texture,
-  Vector3,
-} from "three";
-import { ajustesDireccion } from "@/features/direction-panel/ajustes-direccion";
-import { aVec3, paleta } from "@/shared/paleta";
-import celFragmento from "./cel.frag.glsl?raw";
-import celVertice from "./cel.vert.glsl?raw";
-import contornoFragmento from "./contorno.frag.glsl?raw";
-import contornoVertice from "./contorno.vert.glsl?raw";
+  indiceDesdeProgreso,
+  progresoDesdeScroll,
+  progresoLocalDesdeGlobal,
+} from "@/features/camera-cuts/progreso-scroll";
+import { cuadrosPorProgreso } from "./cuadros-por-progreso";
+import { framesPorAncla } from "./frames-sujeto";
+import mezclaFragmento from "./mezcla-frames.frag.glsl?raw";
+import mezclaVertice from "./mezcla-frames.vert.glsl?raw";
 
-const MODELO = "/sujeto.glb";
+const RUTAS_TODOS_LOS_FRAMES = Object.values(framesPorAncla).flat();
 
-function conMaterial(original: Object3D, material: ShaderMaterial): Object3D {
-  const copia = original.clone(true);
-  copia.traverse((nodo) => {
-    const malla = nodo as Mesh;
-    if (malla.isMesh) malla.material = material;
-  });
-  return copia;
+/** Tamaño del plano en unidades de mundo. Provisional hasta que llegue el arte final. */
+const ANCHO = 1.3;
+const ALTO = 1.9;
+
+function crearUniforms(inicial: Texture) {
+  return {
+    uFrameActual: { value: inicial },
+    uFrameSiguiente: { value: inicial },
+    uMezcla: { value: 0 },
+  };
 }
 
+type Uniforms = ReturnType<typeof crearUniforms>;
+
+/**
+ * El sujeto: un plano orientado a cámara con el arte 2D de krea.ai como
+ * textura, en vez de una malla 3D sombreada en tiempo real — ver
+ * docs/superpowers/specs/2026-09-14-sujeto-2d-frames-design.md.
+ *
+ * El scroll es su único motor de animación: no hay reloj propio, giro ni
+ * deriva independiente del visitante. El progreso DENTRO del tramo de la
+ * ancla activa decide qué frame de su turnaround se ve.
+ */
 export function SujetoFlotante() {
-  const grupo = useRef<Group>(null);
-  const reloj = useRef(0);
-  const { scene } = useGLTF(MODELO);
+  const material = useRef<ShaderMaterial>(null);
 
-  const mapa = useMemo(() => {
-    let encontrado: Texture | null = null;
-    scene.traverse((nodo) => {
-      const malla = nodo as Mesh;
-      if (!malla.isMesh || encontrado) return;
-      encontrado = (malla.material as MeshStandardMaterial).map ?? null;
+  const texturasCargadas = useTexture(RUTAS_TODOS_LOS_FRAMES);
+  const texturasPorRuta = useMemo(() => {
+    const mapa = new Map<string, Texture>();
+    RUTAS_TODOS_LOS_FRAMES.forEach((ruta, i) => {
+      const textura = texturasCargadas[i];
+      if (!textura) return;
+      // el shader escribe directo al framebuffer sin conversión de vuelta,
+      // así que la textura se pide en crudo — mismo motivo que el atlas del
+      // sujeto anterior
+      textura.colorSpace = NoColorSpace;
+      textura.needsUpdate = true;
+      mapa.set(ruta, textura);
     });
+    return mapa;
+  }, [texturasCargadas]);
 
-    if (encontrado) {
-      // El cargador marca la textura como sRGB y WebGL la convierte a lineal al
-      // muestrear. Este shader escribe directo al framebuffer sin convertir de
-      // vuelta, así que saldría oscura y virada. Se pide en crudo, que además es
-      // como van los colores de la paleta.
-      const t = encontrado as Texture;
-      t.colorSpace = NoColorSpace;
-      t.needsUpdate = true;
-    }
-    return encontrado as Texture | null;
-  }, [scene]);
+  const primeraTextura = texturasCargadas[0];
+  if (!primeraTextura) throw new Error("No se cargó ningún frame del sujeto");
+  const iniciales = useMemo(() => crearUniforms(primeraTextura), [primeraTextura]);
 
-  const materialCel = useMemo(
-    () =>
-      new ShaderMaterial({
-        vertexShader: celVertice,
-        fragmentShader: celFragmento,
-        uniforms: {
-          uMapa: { value: mapa },
-          uBase: { value: new Vector3(...aVec3(paleta.cremaLuz)) },
-          uUsarTextura: { value: ajustesDireccion.cel.usarTextura ? 1 : 0 },
-          // la luz entra desde la izquierda, en espacio de vista: aquí solo
-          // decide dónde cae la banda de sombra, no el color
-          uLuz: { value: new Vector3(-0.72, 0.42, 0.55) },
-          uCorteLuz: { value: ajustesDireccion.cel.corteLuz },
-          uCorteSombra: { value: ajustesDireccion.cel.corteSombra },
-          uMedio: { value: ajustesDireccion.cel.medio },
-          uSombra: { value: ajustesDireccion.cel.sombra },
-        },
-      }),
-    [mapa],
-  );
+  useFrame(() => {
+    const u = material.current?.uniforms as Uniforms | undefined;
+    if (!u) return;
 
-  const materialContorno = useMemo(
-    () =>
-      new ShaderMaterial({
-        vertexShader: contornoVertice,
-        fragmentShader: contornoFragmento,
-        side: BackSide,
-        uniforms: {
-          uGrosor: { value: ajustesDireccion.cel.grosorContorno },
-          uTinta: { value: new Vector3(...aVec3(paleta.tinta)) },
-        },
-      }),
-    [],
-  );
+    const recorrido = document.documentElement.scrollHeight - window.innerHeight;
+    const progreso = progresoDesdeScroll(window.scrollY, recorrido);
+    const indice = indiceDesdeProgreso(progreso, encuadres.length);
+    const progresoLocal = progresoLocalDesdeGlobal(progreso, encuadres.length, indice);
 
-  // Se clona la ESCENA, no se le arranca la geometría a la malla. El nodo del
-  // modelo lleva una rotación de 90° en X —la corrección Z-arriba de Blender— y
-  // el desplazamiento del centrado; quedarse solo con la geometría tira las dos
-  // cosas y el sujeto sale tumbado y descolocado.
-  const capaCel = useMemo(() => conMaterial(scene, materialCel), [scene, materialCel]);
-  const capaContorno = useMemo(
-    () => conMaterial(scene, materialContorno),
-    [scene, materialContorno],
-  );
+    const encuadre = encuadres[indice];
+    if (!encuadre) return;
+    const frames = framesPorAncla[encuadre.nombre];
+    if (!frames || frames.length === 0) return;
 
-  useFrame((_, delta) => {
-    const g = grupo.current;
-    if (!g) return;
-    reloj.current += delta;
+    const { indiceActual, indiceSiguiente, mezcla } = cuadrosPorProgreso(
+      progresoLocal,
+      frames.length,
+    );
 
-    const { cel, sujeto } = ajustesDireccion;
+    const rutaActual = frames[indiceActual];
+    const rutaSiguiente = frames[indiceSiguiente];
+    const texturaActual = rutaActual ? texturasPorRuta.get(rutaActual) : undefined;
+    const texturaSiguiente = rutaSiguiente ? texturasPorRuta.get(rutaSiguiente) : undefined;
 
-    // el panel mueve el sombreado en caliente: los uniforms se refrescan aquí
-    const u = materialCel.uniforms;
-    if (u.uUsarTextura) u.uUsarTextura.value = cel.usarTextura ? 1 : 0;
-    if (u.uCorteLuz) u.uCorteLuz.value = cel.corteLuz;
-    if (u.uCorteSombra) u.uCorteSombra.value = cel.corteSombra;
-    if (u.uMedio) u.uMedio.value = cel.medio;
-    if (u.uSombra) u.uSombra.value = cel.sombra;
-    const c = materialContorno.uniforms;
-    if (c.uGrosor) c.uGrosor.value = cel.grosorContorno;
-
-    // reloj propio: gira a su ritmo, indiferente al visitante (§4.3)
-    g.rotation.y += delta * sujeto.giro;
-
-    // La deriva secundaria OSCILA, no se integra. Sumar un incremento en X y Z
-    // cada fotograma acumula sin límite y el sujeto acaba dando volteretas como
-    // un dado; lo que se busca es un balanceo de tres o cuatro grados. Las dos
-    // frecuencias son inconmensurables para que el ciclo no se repita nunca.
-    g.rotation.x = Math.sin(reloj.current * 0.31) * sujeto.deriva;
-    g.rotation.z = Math.sin(reloj.current * 0.23 + 1.7) * sujeto.deriva * 0.78;
+    if (texturaActual) u.uFrameActual.value = texturaActual;
+    if (texturaSiguiente) u.uFrameSiguiente.value = texturaSiguiente;
+    u.uMezcla.value = mezcla;
   });
 
   return (
-    <group ref={grupo} position={[0, 0.42, 0]} scale={1.05}>
-      {/* el contorno primero: cara de atrás, malla inflada a lo largo de sus normales */}
-      <primitive object={capaContorno} />
-      <primitive object={capaCel} />
-    </group>
+    <Billboard position={[0, 0.42, 0]}>
+      <mesh>
+        <planeGeometry args={[ANCHO, ALTO]} />
+        <shaderMaterial
+          ref={material}
+          fragmentShader={mezclaFragmento}
+          vertexShader={mezclaVertice}
+          transparent
+          uniforms={iniciales}
+        />
+      </mesh>
+    </Billboard>
   );
 }
 
-useGLTF.preload(MODELO);
+useTexture.preload(RUTAS_TODOS_LOS_FRAMES);
