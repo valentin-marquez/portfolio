@@ -101,10 +101,20 @@ export function crearObjetivoEscena(
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
     },
     redimensionar(a, b) {
-      if (a === ancho && b === alto) return;
-      ancho = Math.max(1, a);
-      alto = Math.max(1, b);
-      asignar();
+      const nuevoAncho = Math.max(1, a);
+      const nuevoAlto = Math.max(1, b);
+      if (nuevoAncho === ancho && nuevoAlto === alto) return;
+      ancho = nuevoAncho;
+      alto = nuevoAlto;
+      try {
+        asignar();
+      } catch (error) {
+        // sin tamaño guardado, el próximo intento vuelve a asignar en vez de dibujar a medias
+        ancho = 0;
+        alto = 0;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        throw error;
+      }
     },
     destruir() {
       gl.deleteTexture(texColor);
@@ -139,14 +149,19 @@ export function crearObjetivoSimple(gl: WebGL2RenderingContext): ObjetivoSimple 
       gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
     },
     redimensionar(a, b) {
-      if (a === ancho && b === alto) return;
-      ancho = Math.max(1, a);
-      alto = Math.max(1, b);
-      texturaFlotante(gl, ancho, alto, tex);
+      const nuevoAncho = Math.max(1, a);
+      const nuevoAlto = Math.max(1, b);
+      if (nuevoAncho === ancho && nuevoAlto === alto) return;
+      texturaFlotante(gl, nuevoAncho, nuevoAlto, tex);
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-      comprobar(gl);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      try {
+        comprobar(gl);
+      } finally {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      }
+      ancho = nuevoAncho;
+      alto = nuevoAlto;
     },
     destruir() {
       gl.deleteTexture(tex);

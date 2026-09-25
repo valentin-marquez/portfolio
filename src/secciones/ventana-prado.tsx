@@ -12,17 +12,21 @@ interface Props {
   alMontar: (prado: Prado | null, elemento: HTMLDivElement | null) => void;
 }
 
-/** Una ventana del prado: canvas WebGL2 con los bordes disueltos, o un respaldo estático. */
+/**
+ * Una ventana del prado: canvas WebGL2 con los bordes disueltos. Sin WebGL2, o mientras el contexto
+ * está perdido o falló, se ve un respaldo estático; el canvas sigue montado para poder recuperarse.
+ */
 export function VentanaPrado({ alto, dientes, semilla, alMontar }: Props) {
   const contenedor = useRef<HTMLDivElement>(null);
   const lienzo = useRef<HTMLCanvasElement>(null);
+  const [sinSoporte, setSinSoporte] = useState(false);
   const [respaldo, setRespaldo] = useState(false);
 
   useEffect(() => {
     const canvas = lienzo.current;
     if (!canvas) return;
     if (!soportaWebGL2()) {
-      setRespaldo(true);
+      setSinSoporte(true);
       return;
     }
     let prado: Prado | null = null;
@@ -37,12 +41,13 @@ export function VentanaPrado({ alto, dientes, semilla, alMontar }: Props) {
           nucleos: navigator.hardwareConcurrency || 4,
         }),
         reducirMovimiento: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+        alCambiarEstado: (estado) => setRespaldo(estado !== "activo"),
       });
     } catch (error) {
       console.error(error);
     }
     if (!prado) {
-      setRespaldo(true);
+      setSinSoporte(true);
       return;
     }
     const montado = prado;
@@ -65,13 +70,19 @@ export function VentanaPrado({ alto, dientes, semilla, alMontar }: Props) {
   return (
     <div
       ref={contenedor}
-      className="mx-auto w-[min(1000px,calc(100%-32px))]"
+      className="relative mx-auto w-[min(1000px,calc(100%-32px))]"
       style={{ height: alto }}
     >
-      {respaldo ? (
-        <div className="respaldo-prado h-full w-full" aria-hidden="true" />
-      ) : (
-        <canvas ref={lienzo} className="block h-full w-full" aria-hidden="true" tabIndex={-1} />
+      {!sinSoporte && (
+        <canvas
+          ref={lienzo}
+          className={`block h-full w-full ${respaldo ? "invisible" : ""}`}
+          aria-hidden="true"
+          tabIndex={-1}
+        />
+      )}
+      {(sinSoporte || respaldo) && (
+        <div className="respaldo-prado absolute inset-0" aria-hidden="true" />
       )}
     </div>
   );

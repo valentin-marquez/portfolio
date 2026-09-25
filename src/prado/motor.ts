@@ -34,7 +34,11 @@ export interface OpcionesPrado {
   parametros: Parametros;
   calidad: Calidad;
   reducirMovimiento: boolean;
+  /** avisa cuando el prado deja de dibujarse (contexto perdido o fallo) y cuando vuelve */
+  alCambiarEstado?: (estado: EstadoPrado) => void;
 }
+
+export type EstadoPrado = "activo" | "perdido" | "fallido";
 
 export interface Prado {
   fijarScroll(velocidadPx: number): void;
@@ -50,6 +54,20 @@ export function pasoTiempo(anteriorMs: number | null, ahoraMs: number): number {
   if (anteriorMs === null) return 0;
   return Math.min(0.05, Math.max(0, (ahoraMs - anteriorMs) / 1000));
 }
+
+/** La ráfaga que ve el pasto: la misma línea de tiempo que el latido del audio y las semillas. */
+export function rafagaDelPrado(ahoraMs: number): Rafaga {
+  return rafaga(ahoraMs / 1000);
+}
+
+/** Con entradas acumuladas del IntersectionObserver manda la más reciente. */
+export function visibleSegun(entradas: ReadonlyArray<{ isIntersecting: boolean }>): boolean {
+  return entradas[entradas.length - 1]?.isIntersecting ?? false;
+}
+
+/** El navegador olvida las extensiones al perder el contexto: hay que pedirla al montar y al recuperar. */
+const tieneColorFlotante = (gl: WebGL2RenderingContext) =>
+  gl.getExtension("EXT_color_buffer_float") !== null;
 
 const NOMBRES_HOJA = [
   "u_vistaProy",
@@ -356,8 +374,9 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
     stencil: false,
     powerPreference: "high-performance",
   });
-  if (!gl?.getExtension("EXT_color_buffer_float")) return null;
+  if (!gl || !tieneColorFlotante(gl)) return null;
   const p = op.parametros;
+  const avisar = (estado: EstadoPrado) => op.alCambiarEstado?.(estado);
   const aspectoActual = () => Math.max(0.5, canvas.clientWidth / Math.max(1, canvas.clientHeight));
 
   let recursos: Recursos | null = crearRecursos(gl, op, aspectoActual());
@@ -365,6 +384,7 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
   let anterior: number | null = null;
   let visible = false;
   let perdido = false;
+  let fallido = false;
   let tiempo = 0;
   let extra = 0;
   let velocidad = 0;
@@ -373,68 +393,86 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
   let fuerzaPuntero = 0;
   let ultimaVp: Mat4 | null = null;
 
+  function fallar(error: unknown) {
+    console.error(error);
+    fallido = true;
+    cancelAnimationFrame(raf);
+    raf = 0;
+    avisar("fallido");
+  }
+
   function cuadro(ahora: number) {
     raf = 0;
-    if (!visible || perdido || !recursos) return;
-    const dt = pasoTiempo(anterior, ahora);
-    anterior = ahora;
-    const movimiento = op.reducirMovimiento ? 0.15 : 1;
-    tiempo += dt * movimiento;
-    extra = influenciaScroll(extra, velocidad, dt);
-    velocidad *= Math.exp(-dt * 4);
+    if (!visible || perdido || fallido || !recursos) return;
+    try {
+      const dt = pasoTiempo(anterior, ahora);
+      anterior = ahora;
+      const movimiento = op.reducirMovimiento ? 0.15 : 1;
+      tiempo += dt * movimiento;
+      extra = influenciaScroll(extra, velocidad, dt);
+      velocidad *= Math.exp(-dt * 4);
 
-    const dpr = Math.min(window.devicePixelRatio || 1, op.calidad.dprMax);
-    const ancho = Math.max(1, Math.round(canvas.clientWidth * dpr));
-    const alto = Math.max(1, Math.round(canvas.clientHeight * dpr));
-    if (canvas.width !== ancho || canvas.height !== alto) {
-      canvas.width = ancho;
-      canvas.height = alto;
-    }
-    recursos.redimensionar(ancho, alto);
+      const dpr = Math.min(window.devicePixelRatio || 1, op.calidad.dprMax);
+      const ancho = Math.max(1, Math.round(canvas.clientWidth * dpr));
+      const alto = Math.max(1, Math.round(canvas.clientHeight * dpr));
+      if (canvas.width !== ancho || canvas.height !== alto) {
+        canvas.width = ancho;
+        canvas.height = alto;
+      }
+      recursos.redimensionar(ancho, alto);
 
-    const ojo = { x: 0, y: p.camara.altura, z: 0 };
-    const vp = multiplicar(
-      perspectiva(p.camara.fov, ancho / alto, 0.05, 200),
-      mirarA(ojo, { x: 0, y: p.camara.mirarY, z: p.camara.mirarZ }),
-    );
-    const inversa = invertir(vp) ?? vp;
-    ultimaVp = vp;
-
-    if (puntero) {
-      const hit = rayoASuelo(
-        inversa,
-        (puntero.x / Math.max(1, canvas.clientWidth)) * 2 - 1,
-        1 - (puntero.y / Math.max(1, canvas.clientHeight)) * 2,
+      const ojo = { x: 0, y: p.camara.altura, z: 0 };
+      const vp = multiplicar(
+        perspectiva(p.camara.fov, ancho / alto, 0.05, 200),
+        mirarA(ojo, { x: 0, y: p.camara.mirarY, z: p.camara.mirarZ }),
       );
-      if (hit) suelo = { x: hit.x, z: hit.z };
-    }
-    fuerzaPuntero += ((puntero ? 1 : 0) - fuerzaPuntero) * (1 - Math.exp(-dt * 3));
+      const inversa = invertir(vp) ?? vp;
+      ultimaVp = vp;
 
-    recursos.dibujar({
-      vp,
-      inversa,
-      ojo,
-      tiempo,
-      rafaga: rafaga(ahora / 1000, op.semilla),
-      extra,
-      puntero: [suelo.x, suelo.z, RADIO_PUNTERO, fuerzaPuntero * (op.reducirMovimiento ? 0.3 : 1)],
-      movimiento,
-      ancho,
-      alto,
-      dpr,
-    });
+      if (puntero) {
+        const hit = rayoASuelo(
+          inversa,
+          (puntero.x / Math.max(1, canvas.clientWidth)) * 2 - 1,
+          1 - (puntero.y / Math.max(1, canvas.clientHeight)) * 2,
+        );
+        if (hit) suelo = { x: hit.x, z: hit.z };
+      }
+      fuerzaPuntero += ((puntero ? 1 : 0) - fuerzaPuntero) * (1 - Math.exp(-dt * 3));
+
+      recursos.dibujar({
+        vp,
+        inversa,
+        ojo,
+        tiempo,
+        rafaga: rafagaDelPrado(ahora),
+        extra,
+        puntero: [
+          suelo.x,
+          suelo.z,
+          RADIO_PUNTERO,
+          fuerzaPuntero * (op.reducirMovimiento ? 0.3 : 1),
+        ],
+        movimiento,
+        ancho,
+        alto,
+        dpr,
+      });
+    } catch (error) {
+      fallar(error);
+      return;
+    }
     raf = requestAnimationFrame(cuadro);
   }
 
   const pedir = () => {
-    if (raf || !visible || perdido) return;
+    if (raf || !visible || perdido || fallido) return;
     anterior = null;
     raf = requestAnimationFrame(cuadro);
   };
 
   const observador = new IntersectionObserver(
-    ([e]) => {
-      visible = !!e?.isIntersecting;
+    (entradas) => {
+      visible = visibleSegun(entradas);
       if (visible) pedir();
       else {
         cancelAnimationFrame(raf);
@@ -451,15 +489,22 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
     cancelAnimationFrame(raf);
     raf = 0;
     recursos = null;
+    avisar("perdido");
   };
   const alRecuperar = () => {
     perdido = false;
+    if (!tieneColorFlotante(gl)) {
+      fallar(new Error("sin EXT_color_buffer_float tras recuperar el contexto"));
+      return;
+    }
     try {
       recursos = crearRecursos(gl, op, aspectoActual());
     } catch (error) {
-      console.error(error);
+      fallar(error);
       return;
     }
+    fallido = false;
+    avisar("activo");
     pedir();
   };
   canvas.addEventListener("webglcontextlost", alPerder);
