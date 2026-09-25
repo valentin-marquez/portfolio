@@ -1,0 +1,108 @@
+// Cuándo suena el ambiente: arranca con el primer gesto (política de autoplay), la tecla M silencia y
+// lo recuerda, y con la pestaña oculta se suspende. No hay UI visible.
+
+export interface MotorSonido {
+  arrancar(silenciado: boolean): void;
+  fijarViento(intensidad: number): void;
+  fijarSilencio(silenciado: boolean): void;
+  suspender(): void;
+  reanudar(): void;
+  destruir(): void;
+}
+
+export interface Almacen {
+  getItem(clave: string): string | null;
+  setItem(clave: string, valor: string): void;
+}
+
+const CLAVE = "prado:silencio";
+const UMBRAL_VIENTO = 0.01;
+
+function leerSilencio(almacen: Almacen | null): boolean {
+  try {
+    return almacen?.getItem(CLAVE) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function guardarSilencio(almacen: Almacen | null, silenciado: boolean) {
+  try {
+    almacen?.setItem(CLAVE, silenciado ? "1" : "0");
+  } catch {
+    // sin almacenamiento, la preferencia dura solo esta visita
+  }
+}
+
+export function crearControlAudio(dep: {
+  crearMotor: () => MotorSonido | null;
+  almacen: Almacen | null;
+  ventana: EventTarget;
+  documento: EventTarget & { hidden: boolean };
+}) {
+  let motor: MotorSonido | null = null;
+  let intentado = false;
+  let silenciado = leerSilencio(dep.almacen);
+  let viento = 0;
+  let vientoEnviado = Number.NaN;
+
+  const enviarViento = () => {
+    if (!motor) return;
+    motor.fijarViento(viento);
+    vientoEnviado = viento;
+  };
+
+  const arrancar = () => {
+    if (intentado) return;
+    intentado = true;
+    motor = dep.crearMotor();
+    if (!motor) return;
+    motor.arrancar(silenciado);
+    enviarViento();
+    if (dep.documento.hidden) motor.suspender();
+  };
+
+  const alGesto = () => arrancar();
+  const alTecla = (ev: Event) => {
+    const k = ev as KeyboardEvent;
+    const destino = k.target as { tagName?: string; isContentEditable?: boolean } | null;
+    const escribiendo =
+      destino?.tagName === "INPUT" ||
+      destino?.tagName === "TEXTAREA" ||
+      destino?.isContentEditable === true;
+    const conModificador = k.ctrlKey || k.metaKey || k.altKey;
+    if (!escribiendo && !conModificador && (k.key === "m" || k.key === "M")) {
+      silenciado = !silenciado;
+      guardarSilencio(dep.almacen, silenciado);
+      motor?.fijarSilencio(silenciado);
+    }
+    arrancar();
+  };
+  const alVisibilidad = () => {
+    if (!motor) return;
+    if (dep.documento.hidden) motor.suspender();
+    else motor.reanudar();
+  };
+
+  dep.ventana.addEventListener("pointerdown", alGesto);
+  dep.ventana.addEventListener("keydown", alTecla);
+  dep.documento.addEventListener("visibilitychange", alVisibilidad);
+
+  return {
+    fijarViento(intensidad: number) {
+      viento = intensidad;
+      if (Math.abs(viento - vientoEnviado) >= UMBRAL_VIENTO || Number.isNaN(vientoEnviado))
+        enviarViento();
+    },
+    get silenciado() {
+      return silenciado;
+    },
+    destruir() {
+      dep.ventana.removeEventListener("pointerdown", alGesto);
+      dep.ventana.removeEventListener("keydown", alTecla);
+      dep.documento.removeEventListener("visibilitychange", alVisibilidad);
+      motor?.destruir();
+      motor = null;
+    },
+  };
+}
