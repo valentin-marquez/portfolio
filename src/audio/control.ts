@@ -6,7 +6,8 @@
 
 export interface MotorSonido {
   arrancar(silenciado: boolean): void;
-  fijarViento(intensidad: number): void;
+  /** intensidad 0..1 y frente de la ola (x de pantalla 0..1) para el paneo */
+  fijarViento(intensidad: number, frente: number): void;
   fijarSilencio(silenciado: boolean): void;
   suspender(): void;
   reanudar(): void;
@@ -23,6 +24,7 @@ export interface Almacen {
 const CLAVE = "prado:silencio";
 const GESTOS = ["pointerdown", "pointerup", "click", "touchend"] as const;
 const UMBRAL_VIENTO = 0.01;
+const UMBRAL_FRENTE = 0.02;
 
 function leerSilencio(almacen: Almacen | null): boolean {
   try {
@@ -50,12 +52,15 @@ export function crearControlAudio(dep: {
   let intentado = false;
   let silenciado = leerSilencio(dep.almacen);
   let viento = 0;
+  let frente = 0.5;
   let vientoEnviado = Number.NaN;
+  let frenteEnviado = Number.NaN;
 
   const enviarViento = () => {
     if (!motor) return;
-    motor.fijarViento(viento);
+    motor.fijarViento(viento, frente);
     vientoEnviado = viento;
+    frenteEnviado = frente;
   };
 
   const arrancar = () => {
@@ -101,10 +106,14 @@ export function crearControlAudio(dep: {
   dep.documento.addEventListener("visibilitychange", alVisibilidad);
 
   return {
-    fijarViento(intensidad: number) {
+    fijarViento(intensidad: number, frenteOla = 0.5) {
       viento = intensidad;
-      if (Math.abs(viento - vientoEnviado) >= UMBRAL_VIENTO || Number.isNaN(vientoEnviado))
-        enviarViento();
+      frente = frenteOla;
+      const cambio =
+        Number.isNaN(vientoEnviado) ||
+        Math.abs(viento - vientoEnviado) >= UMBRAL_VIENTO ||
+        Math.abs(frente - frenteEnviado) >= UMBRAL_FRENTE;
+      if (cambio) enviarViento();
     },
     get silenciado() {
       return silenciado;

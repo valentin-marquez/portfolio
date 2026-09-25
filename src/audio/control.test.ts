@@ -9,7 +9,7 @@ function motorFalso(sonandoAlArrancar = true) {
       llamadas.push(`arrancar:${s}`);
       sonando = sonandoAlArrancar;
     },
-    fijarViento: (i) => llamadas.push(`viento:${i.toFixed(2)}`),
+    fijarViento: (i, frente) => llamadas.push(`viento:${i.toFixed(2)}@${frente.toFixed(2)}`),
     fijarSilencio: (s) => llamadas.push(`silencio:${s}`),
     suspender: () => llamadas.push("suspender"),
     reanudar: () => {
@@ -68,7 +68,7 @@ describe("crearControlAudio", () => {
     const m = montar();
     m.control.fijarViento(0.5);
     m.ventana.dispatchEvent(new Event("pointerdown"));
-    expect(m.llamadas).toEqual(["arrancar:false", "viento:0.50"]);
+    expect(m.llamadas).toEqual(["arrancar:false", "viento:0.50@0.50"]);
   });
 
   it("un segundo gesto no crea otro motor", () => {
@@ -143,5 +143,14 @@ describe("crearControlAudio", () => {
     m.ventana.dispatchEvent(new Event("pointerup"));
     m.ventana.dispatchEvent(new Event("click"));
     expect(m.llamadas).not.toContain("reanudar");
+  });
+
+  it("reenvía el frente de la ola para que el sonido cruce con ella", () => {
+    const m = montar();
+    m.ventana.dispatchEvent(new Event("pointerdown"));
+    m.control.fijarViento(0.5, 0.2);
+    m.control.fijarViento(0.5, 0.8);
+    expect(m.llamadas).toContain("viento:0.50@0.20");
+    expect(m.llamadas).toContain("viento:0.50@0.80");
   });
 });

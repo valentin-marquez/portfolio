@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { crearMotorSonido } from "./audio/ambiente";
 import { type Almacen, crearControlAudio } from "./audio/control";
 import { calcularProgreso, escena, vientoDelLatido } from "./estado/escena";
-import { pasoTiempo } from "./prado/motor";
+import { pasoTiempo, rafagaDelPrado } from "./prado/motor";
 import { influenciaScroll } from "./prado/viento";
 import { CapaSemillas } from "./secciones/capa-semillas";
 import { Cierre } from "./secciones/cierre";
@@ -58,7 +58,8 @@ export function App() {
       influencia = influenciaScroll(influencia, escena.velocidad, dt);
       escena.velocidad *= Math.exp(-dt * 4);
       escena.viento = vientoDelLatido(ahora, influencia);
-      audio.fijarViento(escena.viento);
+      // el sonido cruza con la ola: mismo frente que ve el pasto
+      audio.fijarViento(escena.viento, rafagaDelPrado(ahora).frente);
       raf = requestAnimationFrame(latido);
     };
     raf = requestAnimationFrame(latido);
