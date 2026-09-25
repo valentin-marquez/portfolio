@@ -3,21 +3,29 @@ import { escena } from "@/estado/escena";
 import { elegirCalidad } from "@/prado/calidad";
 import { soportaWebGL2 } from "@/prado/gl/soporte";
 import { montarPrado, type Prado } from "@/prado/motor";
+import type { Parametros } from "@/prado/parametros";
 
 interface Props {
   alto: string;
+  /** ancho CSS de la ventana; por defecto min(1000px, 100% − 32px) */
+  ancho?: string;
   dientes: number;
   semilla: number;
   /** avisa el prado montado (o null al desmontar) y el elemento de la ventana */
   alMontar: (prado: Prado | null, elemento: HTMLDivElement | null) => void;
+  /** cada cuadro la página puede mover la cámara, por ejemplo según el scroll */
+  ajustarCamara?: (base: Parametros["camara"]) => Parametros["camara"];
 }
 
 /**
  * Una ventana del prado: canvas WebGL2 con los bordes disueltos. Sin WebGL2, o mientras el contexto
  * está perdido o falló, se ve un respaldo estático; el canvas sigue montado para poder recuperarse.
  */
-export function VentanaPrado({ alto, dientes, semilla, alMontar }: Props) {
+export function VentanaPrado({ alto, ancho, dientes, semilla, alMontar, ajustarCamara }: Props) {
   const contenedor = useRef<HTMLDivElement>(null);
+  // el ajuste de cámara cambia de identidad entre renders; se lee por ref para no remontar el prado
+  const ajuste = useRef(ajustarCamara);
+  ajuste.current = ajustarCamara;
   const lienzo = useRef<HTMLCanvasElement>(null);
   const [sinSoporte, setSinSoporte] = useState(false);
   const [respaldo, setRespaldo] = useState(false);
@@ -42,6 +50,7 @@ export function VentanaPrado({ alto, dientes, semilla, alMontar }: Props) {
         }),
         reducirMovimiento: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
         alCambiarEstado: (estado) => setRespaldo(estado !== "activo"),
+        ajustarCamara: (base) => (ajuste.current ? ajuste.current(base) : base),
       });
     } catch (error) {
       console.error(error);
@@ -70,8 +79,8 @@ export function VentanaPrado({ alto, dientes, semilla, alMontar }: Props) {
   return (
     <div
       ref={contenedor}
-      className="relative mx-auto w-[min(1000px,calc(100%-32px))]"
-      style={{ height: alto }}
+      className={`relative mx-auto ${ancho ? "" : "w-[min(1000px,calc(100%-32px))]"}`}
+      style={{ height: alto, width: ancho }}
     >
       {!sinSoporte && (
         <canvas

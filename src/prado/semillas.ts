@@ -8,6 +8,8 @@ export interface Semilla {
   fase: Fase;
   /** posición dentro de su zona lateral, 0..1 */
   carril: number;
+  /** altura de vuelo, 0..1: repartida entre todas las semillas */
+  altura: number;
   indice: number;
   fasePropia: number;
   tam: number;
@@ -80,9 +82,11 @@ export function crearSemillas(n: number, semilla: number): Semilla[] {
       y: 0,
       fase: "reposo" as Fase,
       carril: 0.15 + azar() * 0.7,
+      altura: (i + 0.5) / n,
       indice: i,
       fasePropia: azar() * Math.PI * 2,
-      tam: 9 + azar() * 7 + desenfoque * 10,
+      // más grandes que un punto: tienen que leerse como semillas, no como manchas
+      tam: 14 + azar() * 8 + desenfoque * 12,
       desenfoque,
       alfa: 0,
     };
@@ -120,9 +124,8 @@ export function actualizarSemillas(semillas: Semilla[], e: Entorno): void {
       if (zona) {
         tx = zona[0] + (zona[1] - zona[0]) * s.carril + deriva * 14;
         tx = Math.min(zona[1], Math.max(zona[0], tx));
-        const altura = (s.indice + 0.5) / 10;
         const vaiven = e.reducir ? 0 : Math.cos(e.tiempo * 0.2 + s.fasePropia) * 20;
-        ty = e.alto * (0.12 + 0.76 * altura) + vaiven;
+        ty = e.alto * (0.12 + 0.76 * s.altura) + vaiven;
         alfaObjetivo = ALFA_VUELO * (1 - s.desenfoque * 0.5);
       } else {
         tx = s.x;

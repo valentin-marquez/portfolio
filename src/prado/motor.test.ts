@@ -61,7 +61,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function montar(f: GlFalso) {
+function montar(f: GlFalso, extra: Partial<Parameters<typeof montarPrado>[1]> = {}) {
   const lienzo = Object.assign(new EventTarget(), {
     width: 0,
     height: 0,
@@ -78,6 +78,7 @@ function montar(f: GlFalso) {
     calidad: elegirCalidad({ anchoCss: 1440, dpr: 1, nucleos: 8 }),
     reducirMovimiento: false,
     alCambiarEstado: (e) => estados.push(e),
+    ...extra,
   });
   return { lienzo, prado, estados };
 }
@@ -125,5 +126,33 @@ describe("montarPrado ante la pérdida del contexto", () => {
     expect(cuadro).toBeDefined();
     expect(() => cuadro?.(16)).not.toThrow();
     expect(estados.at(-1)).toBe("fallido");
+  });
+});
+
+describe("montarPrado controlado desde afuera", () => {
+  it("en pausa no pide más cuadros, y al salir de la pausa vuelve a dibujar", () => {
+    const f = crearGlFalso();
+    const { prado } = montar(f);
+    alObservar?.([{ isIntersecting: true }]);
+    prado?.fijarEnPausa(true);
+    const pendientes = cuadros.length;
+    cuadros.at(-1)?.(16);
+    expect(cuadros.length).toBe(pendientes);
+    prado?.fijarEnPausa(false);
+    expect(cuadros.length).toBe(pendientes + 1);
+  });
+
+  it("cada cuadro deja que la página ajuste la cámara (por ejemplo, según el scroll)", () => {
+    const f = crearGlFalso();
+    const vistas: number[] = [];
+    montar(f, {
+      ajustarCamara: (base) => {
+        vistas.push(base.altura);
+        return { ...base, altura: base.altura + 1 };
+      },
+    });
+    alObservar?.([{ isIntersecting: true }]);
+    cuadros.at(-1)?.(16);
+    expect(vistas).toEqual([1.6]);
   });
 });

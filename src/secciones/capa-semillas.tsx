@@ -22,7 +22,10 @@ export function CapaSemillas() {
           return el ? destinosAterrizaje(el.getBoundingClientRect(), CANTIDAD_DESTINOS) : [];
         },
         rectHero: () => escena.elHero?.getBoundingClientRect() ?? null,
-        zonaAterrizaje: () => escena.elCierre?.getBoundingClientRect() ?? null,
+        zonaAterrizaje: () =>
+          escena.zonaAterrizaje
+            ? escena.zonaAterrizaje()
+            : (escena.elCierre?.getBoundingClientRect() ?? null),
         columna: COLUMNA,
         reducirMovimiento: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
       });

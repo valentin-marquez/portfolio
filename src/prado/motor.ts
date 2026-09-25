@@ -37,12 +37,16 @@ export interface OpcionesPrado {
   reducirMovimiento: boolean;
   /** avisa cuando el prado deja de dibujarse (contexto perdido o fallo) y cuando vuelve */
   alCambiarEstado?: (estado: EstadoPrado) => void;
+  /** cada cuadro la página puede mover la cámara (por ejemplo, según el scroll) */
+  ajustarCamara?: (base: Parametros["camara"]) => Parametros["camara"];
 }
 
 export type EstadoPrado = "activo" | "perdido" | "fallido";
 
 export interface Prado {
   fijarScroll(velocidadPx: number): void;
+  /** en pausa no se dibuja (por ejemplo, mientras el contenido lo tapa por completo) */
+  fijarEnPausa(pausa: boolean): void;
   /** px CSS relativos al canvas; NaN cuando el puntero sale */
   fijarPuntero(x: number, y: number): void;
   /** puntas de los dientes de león en px de viewport */
@@ -387,6 +391,7 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
   let visible = false;
   let perdido = false;
   let fallido = false;
+  let enPausa = false;
   let tiempo = 0;
   let extra = 0;
   let velocidad = 0;
@@ -406,7 +411,7 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
 
   function cuadro(ahora: number) {
     raf = 0;
-    if (!visible || perdido || fallido || !recursos) return;
+    if (!visible || perdido || fallido || enPausa || !recursos) return;
     try {
       const dt = pasoTiempo(anterior, ahora);
       anterior = ahora;
@@ -424,10 +429,11 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
       }
       recursos.redimensionar(ancho, alto);
 
-      const ojo = { x: 0, y: p.camara.altura, z: 0 };
+      const camara = op.ajustarCamara ? op.ajustarCamara(p.camara) : p.camara;
+      const ojo = { x: 0, y: camara.altura, z: 0 };
       const vp = multiplicar(
-        perspectiva(p.camara.fov, ancho / alto, 0.05, 200),
-        mirarA(ojo, { x: 0, y: p.camara.mirarY, z: p.camara.mirarZ }),
+        perspectiva(camara.fov, ancho / alto, 0.05, 200),
+        mirarA(ojo, { x: 0, y: camara.mirarY, z: camara.mirarZ }),
       );
       const inversa = invertir(vp) ?? vp;
       ultimaVp = vp;
@@ -475,7 +481,7 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
   }
 
   const pedir = () => {
-    if (raf || !visible || perdido || fallido) return;
+    if (raf || !visible || perdido || fallido || enPausa) return;
     anterior = null;
     raf = requestAnimationFrame(cuadro);
   };
@@ -523,6 +529,14 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
   return {
     fijarScroll(v) {
       velocidad = v;
+    },
+    fijarEnPausa(pausa) {
+      if (pausa === enPausa) return;
+      enPausa = pausa;
+      if (pausa) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      } else pedir();
     },
     fijarPuntero(x, y) {
       puntero = Number.isNaN(x) || Number.isNaN(y) ? null : { x, y };

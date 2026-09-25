@@ -14,7 +14,7 @@ export function Experimentos() {
         <ul className="grid grid-cols-1 gap-[18px] min-[600px]:grid-cols-2">
           {experimentos.map((e) => (
             <li key={e.id}>
-              <div className="aspect-square rounded-[28px] bg-tarjeta" />
+              <div className="aspect-[4/3] rounded-[24px] bg-[#efebe1] ring-1 ring-black/[0.03]" />
               <div className="mx-1 mt-2 flex justify-between text-[13px] text-enfasis">
                 <span>{e.titulo}</span>
                 <span className="font-mono text-xs text-meta">{e.anio}</span>

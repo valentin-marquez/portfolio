@@ -13,7 +13,7 @@ import {
 } from "./semillas";
 
 export const FLOTANTES_POR_SEMILLA = 6; // x, y, tamaño, alfa, desenfoque, giro
-const CANTIDAD = 8;
+const CANTIDAD = 6;
 
 /** Sin MSAA: la capa cubre toda la pantalla y sus sprites ya se suavizan en el shader. */
 export const ATRIBUTOS_CAPA: WebGLContextAttributes = {

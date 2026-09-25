@@ -19,6 +19,11 @@ export const escena = {
   pradoCierre: null as Prado | null,
   elHero: null as HTMLElement | null,
   elCierre: null as HTMLElement | null,
+  /**
+   * Dónde pueden aterrizar las semillas; si la página no la define, es la ventana del cierre.
+   * La variante con una sola pradera la recorta a la parte que no tapa el contenido.
+   */
+  zonaAterrizaje: null as null | (() => Rect | null),
 };
 
 /**

@@ -116,6 +116,16 @@ describe("actualizarSemillas", () => {
   });
 });
 
+describe("reparto de las semillas en vuelo", () => {
+  it("sean cuantas sean, en vuelo se reparten en toda la altura y no se amontonan arriba", () => {
+    const s = crearSemillas(6, 1);
+    simular(s, 0.5, 20);
+    const ys = s.map((x) => x.y / 900);
+    expect(Math.max(...ys)).toBeGreaterThan(0.6);
+    expect(Math.min(...ys)).toBeLessThan(0.4);
+  });
+});
+
 describe("actualizarSemillas en móvil y con movimiento reducido", () => {
   it("en móvil, al aterrizar, no pasan visibles sobre el texto antes de entrar al prado del cierre", () => {
     const cierre = { left: 16, top: 900, width: 358, height: 380 }; // bajo el pliegue: alto 844

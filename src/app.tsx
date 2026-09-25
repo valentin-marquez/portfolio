@@ -11,6 +11,8 @@ import { Experimentos } from "./secciones/experimentos";
 import { Hero } from "./secciones/hero";
 import { Intro } from "./secciones/intro";
 import { SobreMi } from "./secciones/sobre-mi";
+import { VarianteDos } from "./variantes/dos";
+import { VarianteUno } from "./variantes/uno";
 
 function almacenLocal(): Almacen | null {
   try {
@@ -108,16 +110,24 @@ export function App() {
     };
   }, []);
 
+  // mientras se elige la composición: /?v=1 y /?v=2 son las variantes; sin parámetro, la actual
+  const variante = new URLSearchParams(window.location.search).get("v");
   return (
     <>
       <CapaSemillas />
-      <main className="relative z-10">
-        <Hero />
-        <Intro />
-        <Experimentos />
-        <SobreMi />
-        <Cierre />
-      </main>
+      {variante === "1" ? (
+        <VarianteUno />
+      ) : variante === "2" ? (
+        <VarianteDos />
+      ) : (
+        <main className="relative z-10">
+          <Hero />
+          <Intro />
+          <Experimentos />
+          <SobreMi />
+          <Cierre />
+        </main>
+      )}
     </>
   );
 }
