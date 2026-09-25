@@ -189,6 +189,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
   const escena = crearObjetivoEscena(gl, op.calidad.msaa);
   const triangulo = crearTriangulo(gl);
 
+  const usar = (prog: WebGLProgram) => gl.useProgram(prog);
   const c3 = (u: WebGLUniformLocation | null, c: Color) => gl.uniform3f(u, c.r, c.g, c.b);
   const v3 = (u: WebGLUniformLocation | null, v: Vec3) => gl.uniform3f(u, v.x, v.y, v.z);
 
@@ -217,7 +218,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
 
     // cielo y suelo lejano, sin prueba de profundidad
     gl.disable(gl.DEPTH_TEST);
-    gl.useProgram(progCielo);
+    usar(progCielo);
     gl.uniformMatrix4fv(uCielo.u_inversa, false, e.inversa);
     v3(uCielo.u_camara, e.ojo);
     v3(uCielo.u_sol, sol);
@@ -232,7 +233,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     // pasto y tallos
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LESS);
-    gl.useProgram(progPasto);
+    usar(progPasto);
     fijarHoja(uPasto, e);
     c3(uPasto.u_tonoBase, p.pasto.tonoBase);
     c3(uPasto.u_tonoCuerpo, p.pasto.tonoCuerpo);
@@ -251,7 +252,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, verticesHoja, tallos.cantidad);
 
     // cabezas de los dientes de león
-    gl.useProgram(progDiente);
+    usar(progDiente);
     fijarHoja(uDiente, e);
     gl.uniform1f(uDiente.u_aspecto, e.ancho / e.alto);
     gl.uniform1f(uDiente.u_radioCabeza, p.diente.radioCabeza);
@@ -274,7 +275,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     gl.viewport(0, 0, e.ancho, e.alto);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(progComp);
+    usar(progComp);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, color);
     gl.uniform1i(uComp.u_dof, 0);
@@ -318,7 +319,7 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
     stencil: false,
     powerPreference: "high-performance",
   });
-  if (!gl || !gl.getExtension("EXT_color_buffer_float")) return null;
+  if (!gl?.getExtension("EXT_color_buffer_float")) return null;
   const p = op.parametros;
   const aspectoActual = () => Math.max(0.5, canvas.clientWidth / Math.max(1, canvas.clientHeight));
 
