@@ -27,3 +27,13 @@ describe.skipIf(!hayValidador)("shaders", () => {
     }
   }
 });
+
+describe("reglas de los shaders", () => {
+  it("nadie eleva al cuadrado con pow: es indefinido con base negativa en GLSL ES (usar x*x)", () => {
+    for (const [nombre, programa] of Object.entries(FUENTES)) {
+      for (const etapa of ["vert", "frag"] as const) {
+        expect(programa[etapa], `${nombre}.${etapa}`).not.toMatch(/pow\([^;]*,\s*2\.0\s*\)/);
+      }
+    }
+  });
+});

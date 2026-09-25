@@ -16,8 +16,9 @@ float empujeViento(vec2 raiz) {
               + snoise(vec3(raiz * u_viento.x * 3.1, t * 0.35)) * 0.25;
   vec4 clip = u_vistaProy * vec4(raiz.x, 0.0, raiz.y, 1.0);
   float xPantalla = clip.x / clip.w * 0.5 + 0.5;
-  // la ráfaga cruza la pantalla de izquierda a derecha como una ola
-  float ola = exp(-pow((xPantalla - u_rafaga.y) / 0.2, 2.0)) * u_rafaga.x;
+  // la ráfaga cruza la pantalla de izquierda a derecha como una ola (x*x: pow es indefinido con base negativa)
+  float dx = (xPantalla - u_rafaga.y) / 0.2;
+  float ola = exp(-dx * dx) * u_rafaga.x;
   return (ruido * u_viento.y + ola * (u_viento.z + u_extra)) * u_movimiento
        + 0.04 * sin(t * 0.35 - raiz.x * 0.4);
 }
