@@ -20,10 +20,8 @@ import type { Color, Parametros } from "./parametros";
 import {
   type Diente,
   FLOTANTES_POR_HOJA,
-  FLOTANTES_POR_MOTA,
   generarDientes,
   generarHojas,
-  generarPolen,
   instanciasTallos,
   mallaHoja,
 } from "./pasto";
@@ -143,32 +141,6 @@ function crearVaoInstancias(
   };
 }
 
-function crearVaoPolen(gl: WebGL2RenderingContext, motas: Float32Array) {
-  const vao = gl.createVertexArray();
-  gl.bindVertexArray(vao);
-  const bBase = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, bBase);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(0);
-  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-  const bMotas = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, bMotas);
-  gl.bufferData(gl.ARRAY_BUFFER, motas, gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(1);
-  gl.vertexAttribPointer(1, 4, gl.FLOAT, false, FLOTANTES_POR_MOTA * 4, 0);
-  gl.vertexAttribDivisor(1, 1);
-  gl.bindVertexArray(null);
-  return {
-    vao,
-    cantidad: motas.length / FLOTANTES_POR_MOTA,
-    destruir() {
-      gl.deleteBuffer(bBase);
-      gl.deleteBuffer(bMotas);
-      gl.deleteVertexArray(vao);
-    },
-  };
-}
-
 function normalizar(v: Vec3): Vec3 {
   const l = Math.hypot(v.x, v.y, v.z) || 1;
   return { x: v.x / l, y: v.y / l, z: v.z / l };
@@ -180,7 +152,6 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
   const progCielo = programa(FUENTES.cielo);
   const progPasto = programa(FUENTES.pasto);
   const progDiente = programa(FUENTES.diente);
-  const progPolen = programa(FUENTES.polen);
   const progDof = programa(FUENTES.dof);
   const progComp = programa(FUENTES.composicion);
   const uCielo = ubicaciones(gl, progCielo, [
@@ -209,17 +180,6 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     "u_densidadBruma",
     "u_vista",
     "u_nubes",
-  ] as const);
-  const uPolen = ubicaciones(gl, progPolen, [
-    "u_vistaProy",
-    "u_camara",
-    "u_tiempo",
-    "u_movimiento",
-    "u_aspecto",
-    "u_rafagaFuerza",
-    "u_colorSol",
-    "u_bruma",
-    "u_densidadBruma",
   ] as const);
   const uDiente = ubicaciones(gl, progDiente, [
     ...NOMBRES_HOJA,
@@ -270,7 +230,6 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
     datosTallos,
   );
-  const polen = crearVaoPolen(gl, generarPolen(op.calidad.nivel === "baja" ? 60 : 130, op.semilla));
   const escena = crearObjetivoEscena(gl, op.calidad.msaa);
   const desenfoque = crearObjetivoSimple(gl);
   const triangulo = crearTriangulo(gl);
@@ -357,19 +316,6 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     gl.bindVertexArray(cabezas.vao);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, cabezas.cantidad);
 
-    // polen en el aire, con la misma mezcla; la profundidad de campo lo vuelve bokeh
-    usar(progPolen);
-    gl.uniformMatrix4fv(uPolen.u_vistaProy, false, e.vp);
-    v3(uPolen.u_camara, e.ojo);
-    gl.uniform1f(uPolen.u_tiempo, e.tiempo);
-    gl.uniform1f(uPolen.u_movimiento, e.movimiento);
-    gl.uniform1f(uPolen.u_aspecto, e.ancho / e.alto);
-    gl.uniform1f(uPolen.u_rafagaFuerza, e.rafaga.fuerza);
-    c3(uPolen.u_colorSol, p.luz.colorSol);
-    c3(uPolen.u_bruma, p.bruma.color);
-    gl.uniform1f(uPolen.u_densidadBruma, p.bruma.densidad);
-    gl.bindVertexArray(polen.vao);
-    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, polen.cantidad);
     gl.bindVertexArray(null);
     gl.disable(gl.BLEND);
     gl.disable(gl.DEPTH_TEST);
@@ -433,8 +379,8 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
       desenfoque.redimensionar(ancho, alto);
     },
     destruir() {
-      for (const r of [pasto, tallos, cabezas, polen, escena, desenfoque, triangulo]) r.destruir();
-      for (const prog of [progCielo, progPasto, progDiente, progPolen, progDof, progComp])
+      for (const r of [pasto, tallos, cabezas, escena, desenfoque, triangulo]) r.destruir();
+      for (const prog of [progCielo, progPasto, progDiente, progDof, progComp])
         gl.deleteProgram(prog);
     },
   };

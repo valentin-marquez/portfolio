@@ -2,10 +2,8 @@ import { describe, expect, it } from "vitest";
 import { crearParametros } from "./parametros";
 import {
   FLOTANTES_POR_HOJA,
-  FLOTANTES_POR_MOTA,
   generarDientes,
   generarHojas,
-  generarPolen,
   instanciasTallos,
   mallaHoja,
 } from "./pasto";
@@ -65,33 +63,5 @@ describe("dientes de león", () => {
     const t = instanciasTallos(d);
     expect(t.length).toBe(5 * FLOTANTES_POR_HOJA);
     expect(t[6]).toBe(2);
-  });
-});
-
-describe("generarPolen", () => {
-  it("reparte motas en el aire frente a la cámara, sobre el pasto y sin tocar la lente", () => {
-    const n = 300;
-    const polen = generarPolen(n, 4);
-    expect(polen.length).toBe(n * FLOTANTES_POR_MOTA);
-    for (let i = 0; i < n; i++) {
-      const o = i * FLOTANTES_POR_MOTA;
-      const [x, y, z, fase] = [polen[o], polen[o + 1], polen[o + 2], polen[o + 3]] as [
-        number,
-        number,
-        number,
-        number,
-      ];
-      expect(Math.abs(x)).toBeLessThanOrEqual(7);
-      expect(y).toBeGreaterThanOrEqual(0.15);
-      expect(y).toBeLessThanOrEqual(2.4);
-      expect(z).toBeLessThanOrEqual(-1.5);
-      expect(z).toBeGreaterThanOrEqual(-16);
-      expect(fase).toBeGreaterThanOrEqual(0);
-      expect(fase).toBeLessThan(1);
-    }
-  });
-
-  it("es determinista con la semilla", () => {
-    expect(generarPolen(50, 9)).toEqual(generarPolen(50, 9));
   });
 });

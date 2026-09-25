@@ -82,22 +82,3 @@ export function instanciasTallos(dientes: Diente[]): Float32Array {
   });
   return datos;
 }
-
-export const FLOTANTES_POR_MOTA = 4; // x, y, z (relativos a la cámara), fase
-
-/**
- * Polen: motas tibias en el aire frente a la cámara, sobre el pasto. Las posiciones son relativas a la
- * cámara; el shader las hace derivar con el viento y las recicla dentro del mismo volumen.
- */
-export function generarPolen(n: number, semilla: number): Float32Array {
-  const azar = crearAzar(semilla ^ 0x51f1);
-  const datos = new Float32Array(n * FLOTANTES_POR_MOTA);
-  for (let i = 0; i < n; i++) {
-    datos.set(
-      // más motas cerca de la cámara: ahí la profundidad de campo las vuelve bokeh
-      [(azar() * 2 - 1) * 7, 0.15 + azar() * 2.25, -(1.5 + azar() ** 1.6 * 14.5), azar() * 0.999],
-      i * FLOTANTES_POR_MOTA,
-    );
-  }
-  return datos;
-}
