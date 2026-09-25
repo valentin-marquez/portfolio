@@ -1,14 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { type Almacen, crearControlAudio, type MotorSonido } from "./control";
 
-function motorFalso() {
+function motorFalso(sonandoAlArrancar = true) {
   const llamadas: string[] = [];
+  let sonando = false;
   const motor: MotorSonido = {
-    arrancar: (s) => llamadas.push(`arrancar:${s}`),
+    arrancar: (s) => {
+      llamadas.push(`arrancar:${s}`);
+      sonando = sonandoAlArrancar;
+    },
     fijarViento: (i) => llamadas.push(`viento:${i.toFixed(2)}`),
     fijarSilencio: (s) => llamadas.push(`silencio:${s}`),
     suspender: () => llamadas.push("suspender"),
-    reanudar: () => llamadas.push("reanudar"),
+    reanudar: () => {
+      llamadas.push("reanudar");
+      sonando = true;
+    },
+    sonando: () => sonando,
     destruir: () => llamadas.push("destruir"),
   };
   return { motor, llamadas };
@@ -32,8 +40,8 @@ function tecla(key: string) {
   return Object.assign(new Event("keydown"), { key });
 }
 
-function montar(almacen: Almacen | null = almacenEnMemoria()) {
-  const { motor, llamadas } = motorFalso();
+function montar(almacen: Almacen | null = almacenEnMemoria(), sonandoAlArrancar = true) {
+  const { motor, llamadas } = motorFalso(sonandoAlArrancar);
   let creados = 0;
   const ventana = new EventTarget();
   const documento = Object.assign(new EventTarget(), { hidden: false });
@@ -120,5 +128,20 @@ describe("crearControlAudio", () => {
     m.control.fijarViento(0.3);
     m.control.fijarViento(0.305);
     expect(m.llamadas.filter((l) => l.startsWith("viento")).length).toBe(2);
+  });
+
+  it("en pantallas táctiles, si el primer toque no activó el audio, el siguiente gesto lo reanuda", () => {
+    const m = montar(almacenEnMemoria(), false);
+    m.ventana.dispatchEvent(new Event("pointerdown"));
+    m.ventana.dispatchEvent(new Event("pointerup"));
+    expect(m.llamadas).toContain("reanudar");
+  });
+
+  it("si el audio ya suena, los gestos siguientes no lo tocan", () => {
+    const m = montar();
+    m.ventana.dispatchEvent(new Event("pointerdown"));
+    m.ventana.dispatchEvent(new Event("pointerup"));
+    m.ventana.dispatchEvent(new Event("click"));
+    expect(m.llamadas).not.toContain("reanudar");
   });
 });

@@ -1,5 +1,8 @@
 // Cuándo suena el ambiente: arranca con el primer gesto (política de autoplay), la tecla M silencia y
 // lo recuerda, y con la pestaña oculta se suspende. No hay UI visible.
+//
+// En pantallas táctiles el pointerdown no activa el audio (el navegador recién da permiso en el
+// pointerup, touchend o click), así que en cada gesto se reintenta reanudar hasta que suene.
 
 export interface MotorSonido {
   arrancar(silenciado: boolean): void;
@@ -7,6 +10,8 @@ export interface MotorSonido {
   fijarSilencio(silenciado: boolean): void;
   suspender(): void;
   reanudar(): void;
+  /** el contexto de audio está corriendo (no suspendido por el navegador) */
+  sonando(): boolean;
   destruir(): void;
 }
 
@@ -16,6 +21,7 @@ export interface Almacen {
 }
 
 const CLAVE = "prado:silencio";
+const GESTOS = ["pointerdown", "pointerup", "click", "touchend"] as const;
 const UMBRAL_VIENTO = 0.01;
 
 function leerSilencio(almacen: Almacen | null): boolean {
@@ -62,7 +68,13 @@ export function crearControlAudio(dep: {
     if (dep.documento.hidden) motor.suspender();
   };
 
-  const alGesto = () => arrancar();
+  const alGesto = () => {
+    if (!motor) {
+      arrancar();
+      return;
+    }
+    if (!dep.documento.hidden && !motor.sonando()) motor.reanudar();
+  };
   const alTecla = (ev: Event) => {
     const k = ev as KeyboardEvent;
     const destino = k.target as { tagName?: string; isContentEditable?: boolean } | null;
@@ -76,7 +88,7 @@ export function crearControlAudio(dep: {
       guardarSilencio(dep.almacen, silenciado);
       motor?.fijarSilencio(silenciado);
     }
-    arrancar();
+    alGesto();
   };
   const alVisibilidad = () => {
     if (!motor) return;
@@ -84,7 +96,7 @@ export function crearControlAudio(dep: {
     else motor.reanudar();
   };
 
-  dep.ventana.addEventListener("pointerdown", alGesto);
+  for (const gesto of GESTOS) dep.ventana.addEventListener(gesto, alGesto);
   dep.ventana.addEventListener("keydown", alTecla);
   dep.documento.addEventListener("visibilitychange", alVisibilidad);
 
@@ -98,7 +110,7 @@ export function crearControlAudio(dep: {
       return silenciado;
     },
     destruir() {
-      dep.ventana.removeEventListener("pointerdown", alGesto);
+      for (const gesto of GESTOS) dep.ventana.removeEventListener(gesto, alGesto);
       dep.ventana.removeEventListener("keydown", alTecla);
       dep.documento.removeEventListener("visibilitychange", alVisibilidad);
       motor?.destruir();

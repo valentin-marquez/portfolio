@@ -59,6 +59,8 @@ export function crearMotorSonido(
 
   let silenciado = false;
   const objetivo = () => (silenciado ? 0 : VOLUMEN);
+  // el navegador puede rechazar estas promesas (sin gesto, contexto cerrado); no son errores de la página
+  const ignorar = () => {};
 
   return {
     arrancar(s) {
@@ -66,7 +68,7 @@ export function crearMotorSonido(
       ruido.start();
       lfo.start();
       for (const o of osciladores) o.start();
-      void ctx.resume();
+      ctx.resume().catch(ignorar);
       // setTargetAtTime llega al ~95 % en tres constantes de tiempo
       maestro.gain.setTargetAtTime(objetivo(), ctx.currentTime, ENTRADA_S / 3);
     },
@@ -80,13 +82,16 @@ export function crearMotorSonido(
       maestro.gain.setTargetAtTime(objetivo(), ctx.currentTime, 0.3);
     },
     suspender() {
-      void ctx.suspend();
+      ctx.suspend().catch(ignorar);
     },
     reanudar() {
-      void ctx.resume();
+      ctx.resume().catch(ignorar);
+    },
+    sonando() {
+      return ctx.state === "running";
     },
     destruir() {
-      void ctx.close();
+      ctx.close().catch(ignorar);
     },
   };
 }
