@@ -1,43 +1,90 @@
 import { describe, expect, it } from "vitest";
 import { crearParametros } from "@/prado/parametros";
-import { camaraSegunScroll, heroQueSeQueda, zonaDescubierta } from "./coreografia";
+import {
+  camaraCierre,
+  camaraHero,
+  heroQueSeQueda,
+  MOVIMIENTOS,
+  zonaDescubierta,
+} from "./coreografia";
+
+const base = crearParametros().camara;
 
 describe("variante 1: el prado se queda", () => {
-  it("al inicio todo está a la vista y la cámara en su lugar", () => {
-    const h = heroQueSeQueda(0);
-    expect(h.titulo.opacidad).toBe(1);
-    expect(h.prado.opacidad).toBe(1);
-    expect(h.camara.dAltura).toBe(0);
+  it("al inicio todo está a la vista", () => {
+    for (const m of MOVIMIENTOS) {
+      const h = heroQueSeQueda(0, m);
+      expect(h.titulo.opacidad).toBe(1);
+      expect(h.prado.opacidad).toBe(1);
+    }
   });
 
   it("al terminar la sección el título y el prado ya se fueron", () => {
-    const h = heroQueSeQueda(1);
-    expect(h.titulo.opacidad).toBe(0);
-    expect(h.prado.opacidad).toBe(0);
-  });
-
-  it("el título se va antes que el prado: el prado es lo último en desaparecer", () => {
-    for (let p = 0.05; p < 1; p += 0.05) {
-      const h = heroQueSeQueda(p);
-      expect(h.titulo.opacidad).toBeLessThanOrEqual(h.prado.opacidad);
+    for (const m of MOVIMIENTOS) {
+      const h = heroQueSeQueda(1, m);
+      expect(h.titulo.opacidad).toBe(0);
+      expect(h.prado.opacidad).toBe(0);
     }
   });
 
-  it("la cámara sube de a poco y nunca retrocede", () => {
-    let anterior = -1;
-    for (let p = 0; p <= 1; p += 0.05) {
-      const d = heroQueSeQueda(p).camara.dAltura;
-      expect(d).toBeGreaterThanOrEqual(anterior);
-      anterior = d;
+  it("el título se va antes que el prado", () => {
+    for (const m of MOVIMIENTOS) {
+      for (let p = 0.05; p < 1; p += 0.05) {
+        const h = heroQueSeQueda(p, m);
+        expect(h.titulo.opacidad).toBeLessThanOrEqual(h.prado.opacidad);
+      }
     }
-    const base = crearParametros().camara;
-    expect(camaraSegunScroll(base, 1).altura).toBeGreaterThan(base.altura);
-    expect(camaraSegunScroll(base, 0)).toEqual(base);
+  });
+
+  it("al mirar al cielo el prado sigue entero casi todo el tramo: el cielo es la página", () => {
+    expect(heroQueSeQueda(0.7, "cielo").prado.opacidad).toBe(1);
   });
 
   it("fuera de rango se comporta como los extremos", () => {
-    expect(heroQueSeQueda(-3)).toEqual(heroQueSeQueda(0));
-    expect(heroQueSeQueda(7)).toEqual(heroQueSeQueda(1));
+    expect(heroQueSeQueda(-3, "sube")).toEqual(heroQueSeQueda(0, "sube"));
+    expect(heroQueSeQueda(7, "sube")).toEqual(heroQueSeQueda(1, "sube"));
+  });
+});
+
+describe("movimientos de cámara", () => {
+  it("todos parten de la cámara base: el hero arranca quieto", () => {
+    for (const m of MOVIMIENTOS) expect(camaraHero(base, 0, m)).toEqual(base);
+  });
+
+  it("cielo: levanta la vista por sobre el horizonte", () => {
+    const final = camaraHero(base, 1, "cielo");
+    // el punto mirado queda arriba del ojo: se mira hacia arriba
+    expect(final.mirarY).toBeGreaterThan(final.altura + 2);
+  });
+
+  it("sube: la cámara se eleva", () => {
+    expect(camaraHero(base, 1, "sube").altura).toBeGreaterThan(base.altura + 0.5);
+  });
+
+  it("avanza: la cámara camina hacia adentro del prado", () => {
+    expect(camaraHero(base, 1, "avanza").avance).toBeGreaterThan(5);
+  });
+
+  it("los movimientos son continuos y sin retrocesos", () => {
+    for (const m of MOVIMIENTOS) {
+      let anterior = camaraHero(base, 0, m);
+      for (let p = 0.02; p <= 1; p += 0.02) {
+        const c = camaraHero(base, p, m);
+        const salto =
+          Math.abs(c.mirarY - anterior.mirarY) +
+          Math.abs(c.altura - anterior.altura) +
+          Math.abs(c.avance - anterior.avance);
+        expect(salto).toBeLessThan(0.6);
+        anterior = c;
+      }
+    }
+  });
+
+  it("en el cierre se vuelve a la vista base: se baja la mirada al prado", () => {
+    for (const m of MOVIMIENTOS) {
+      expect(camaraCierre(base, 1, m)).toEqual(base);
+      expect(camaraCierre(base, 0, m)).toEqual(camaraHero(base, 1, m));
+    }
   });
 });
 

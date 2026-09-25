@@ -1,7 +1,8 @@
 // Variante 1 · "El prado se queda": el hero queda fijo mientras scrolleas; primero se va el título,
-// la cámara sube de a poco y el prado se desvanece al llegar el contenido. En el cierre el prado
-// vuelve subiendo desde abajo y el "nos vemos" queda en su bruma.
-import { motion, useScroll, useTransform } from "motion/react";
+// la cámara hace su movimiento (mirar al cielo, subir o avanzar) y el contenido llega. En el cierre el
+// recorrido se deshace: la cámara vuelve a la vista del prado y el "nos vemos" queda en su bruma.
+// El scroll pasa por un resorte: la cámara tiene inercia en vez de saltar muesca a muesca.
+import { motion, useScroll, useSpring, useTransform } from "motion/react";
 import { useCallback, useRef } from "react";
 import { escena } from "@/estado/escena";
 import type { Prado } from "@/prado/motor";
@@ -12,9 +13,11 @@ import { RelojSantiago } from "@/secciones/reloj-santiago";
 import { SobreMi } from "@/secciones/sobre-mi";
 import { Titulo } from "@/secciones/titulo";
 import { VentanaPrado } from "@/secciones/ventana-prado";
-import { camaraSegunScroll, heroQueSeQueda } from "./coreografia";
+import { camaraCierre, camaraHero, heroQueSeQueda } from "./coreografia";
 
 const ANCHO = "min(1180px, calc(100% - 32px))";
+const RESORTE = { stiffness: 55, damping: 20, restDelta: 0.0005 };
+const movimiento = () => escena.parametros.movimiento;
 
 const alMontarHero = (prado: Prado | null, elemento: HTMLDivElement | null) => {
   escena.pradoHero = prado;
@@ -28,20 +31,32 @@ const alMontarCierre = (prado: Prado | null, elemento: HTMLDivElement | null) =>
 export function VarianteUno() {
   const hero = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: hero, offset: ["start start", "end end"] });
-  const opacidadTitulo = useTransform(scrollYProgress, (p) => heroQueSeQueda(p).titulo.opacidad);
-  const yTitulo = useTransform(scrollYProgress, (p) => heroQueSeQueda(p).titulo.y);
-  const opacidadPrado = useTransform(scrollYProgress, (p) => heroQueSeQueda(p).prado.opacidad);
-  const escalaPrado = useTransform(scrollYProgress, (p) => heroQueSeQueda(p).prado.escala);
+  const progreso = useSpring(scrollYProgress, RESORTE);
+  const opacidadTitulo = useTransform(
+    progreso,
+    (p) => heroQueSeQueda(p, movimiento()).titulo.opacidad,
+  );
+  const yTitulo = useTransform(progreso, (p) => heroQueSeQueda(p, movimiento()).titulo.y);
+  const opacidadPrado = useTransform(
+    progreso,
+    (p) => heroQueSeQueda(p, movimiento()).prado.opacidad,
+  );
+  const escalaPrado = useTransform(progreso, (p) => heroQueSeQueda(p, movimiento()).prado.escala);
   const ajustarCamara = useCallback(
-    (base: Parametros["camara"]) => camaraSegunScroll(base, scrollYProgress.get()),
-    [scrollYProgress],
+    (base: Parametros["camara"]) => camaraHero(base, progreso.get(), movimiento()),
+    [progreso],
   );
 
   const cierre = useRef<HTMLElement>(null);
-  const { scrollYProgress: progresoCierre } = useScroll({
+  const { scrollYProgress: scrollCierre } = useScroll({
     target: cierre,
     offset: ["start end", "end end"],
   });
+  const progresoCierre = useSpring(scrollCierre, RESORTE);
+  const ajustarCamaraCierre = useCallback(
+    (base: Parametros["camara"]) => camaraCierre(base, progresoCierre.get(), movimiento()),
+    [progresoCierre],
+  );
   // forma de función a propósito: con rangos, Motion acelera la opacidad con la ScrollTimeline
   // nativa y la trata como "entrar y salir de la vista" (al final volvía a 0)
   const opacidadCierre = useTransform(progresoCierre, (p) => Math.min(1, Math.max(0, p / 0.55)));
@@ -93,6 +108,7 @@ export function VarianteUno() {
               dientes={3}
               semilla={2}
               alMontar={alMontarCierre}
+              ajustarCamara={ajustarCamaraCierre}
             />
             <div className="absolute inset-x-0 bottom-[6%]">
               <div className="mx-auto flex w-[560px] max-w-[calc(100%-32px)] items-baseline justify-between">

@@ -430,10 +430,10 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
       recursos.redimensionar(ancho, alto);
 
       const camara = op.ajustarCamara ? op.ajustarCamara(p.camara) : p.camara;
-      const ojo = { x: 0, y: camara.altura, z: 0 };
+      const ojo = { x: 0, y: camara.altura, z: -camara.avance };
       const vp = multiplicar(
         perspectiva(camara.fov, ancho / alto, 0.05, 200),
-        mirarA(ojo, { x: 0, y: camara.mirarY, z: camara.mirarZ }),
+        mirarA(ojo, { x: 0, y: camara.mirarY, z: camara.mirarZ - camara.avance }),
       );
       const inversa = invertir(vp) ?? vp;
       ultimaVp = vp;

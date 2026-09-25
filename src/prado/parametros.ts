@@ -5,7 +5,8 @@ export type Color = { r: number; g: number; b: number };
 // Todo lo afinable del prado en un solo objeto. El panel de depuración lo muta en vivo y el motor lo
 // lee en cada cuadro; cuando el look esté cerrado, los valores de aquí son los definitivos.
 export interface Parametros {
-  camara: { altura: number; mirarY: number; mirarZ: number; fov: number };
+  /** avance: cuánto camina la cámara hacia adentro del prado (m), para las coreografías de scroll */
+  camara: { altura: number; mirarY: number; mirarZ: number; fov: number; avance: number };
   pasto: {
     alturaMin: number;
     alturaMax: number;
@@ -30,11 +31,13 @@ export interface Parametros {
   grano: number;
   /** 0 final, 1 profundidad, 2 círculo de confusión, 3 campo de viento */
   vista: number;
+  /** cómo se mueve la cámara del hero al scrollear (variante 1) */
+  movimiento: "cielo" | "sube" | "avanza";
 }
 
 export function crearParametros(): Parametros {
   return {
-    camara: { altura: 1.6, mirarY: 0.3, mirarZ: -12, fov: 30 },
+    camara: { altura: 1.6, mirarY: 0.3, mirarZ: -12, fov: 30, avance: 0 },
     pasto: {
       alturaMin: 0.28,
       alturaMax: 0.7,
@@ -58,10 +61,12 @@ export function crearParametros(): Parametros {
     viento: { escalaRuido: 0.18, fuerzaRuido: 0.22, fuerzaRafaga: 0.3 },
     foco: { distancia: 8, rango: 9, radioMax: 9, respiracion: 0.35 },
     bruma: { color: { r: 0.93, g: 0.92, b: 0.86 }, densidad: 0.045 },
-    cielo: { arriba: { r: 0.93, g: 0.94, b: 0.91 }, horizonte: { r: 0.97, g: 0.95, b: 0.89 } },
+    // arriba, el cielo tiene casi el tono de la página: al mirar hacia arriba el prado se funde con ella
+    cielo: { arriba: { r: 0.958, g: 0.952, b: 0.925 }, horizonte: { r: 0.97, g: 0.95, b: 0.89 } },
     diente: { radioCabeza: 0.07 },
     borde: { x: 0.16, y: 0.22, ruido: 0.06 },
     grano: 0.035,
     vista: 0,
+    movimiento: "cielo",
   };
 }

@@ -15,12 +15,17 @@ export function abrirDepuracion(p: Parametros): () => void {
   document.body.appendChild(contenedor);
   const panel = new Pane({ title: "prado", expanded: true, container: contenedor });
   panel.addBinding(p, "vista", { options: { final: 0, profundidad: 1, foco: 2, viento: 3 } });
+  panel.addBinding(p, "movimiento", {
+    label: "movimiento",
+    options: { "mirar al cielo": "cielo", subir: "sube", avanzar: "avanza" },
+  });
 
   const camara = panel.addFolder({ title: "cámara", expanded: false });
   camara.addBinding(p.camara, "altura", { min: 0.3, max: 5, step: 0.05 });
   camara.addBinding(p.camara, "mirarY", { min: -2, max: 2, step: 0.05 });
   camara.addBinding(p.camara, "mirarZ", { min: -40, max: -2, step: 0.5 });
   camara.addBinding(p.camara, "fov", { min: 10, max: 70, step: 1 });
+  camara.addBinding(p.camara, "avance", { min: 0, max: 20, step: 0.1 });
 
   const pasto = panel.addFolder({ title: "pasto", expanded: true });
   pasto.addBinding(p.pasto, "curva", { min: 0, max: 1.5, step: 0.01 });
