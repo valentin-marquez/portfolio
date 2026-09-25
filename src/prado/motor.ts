@@ -13,7 +13,7 @@ import {
   type Vec3,
 } from "./camara";
 import { FUENTES } from "./fuentes";
-import { crearObjetivoEscena } from "./gl/objetivo";
+import { crearObjetivoEscena, crearObjetivoSimple } from "./gl/objetivo";
 import { crearPrograma, ubicaciones } from "./gl/programa";
 import { crearTriangulo } from "./gl/triangulo";
 import type { Color, Parametros } from "./parametros";
@@ -124,6 +124,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
   const progCielo = programa(FUENTES.cielo);
   const progPasto = programa(FUENTES.pasto);
   const progDiente = programa(FUENTES.diente);
+  const progDof = programa(FUENTES.dof);
   const progComp = programa(FUENTES.composicion);
   const uCielo = ubicaciones(gl, progCielo, [
     "u_inversa",
@@ -158,6 +159,15 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     "u_bruma",
     "u_densidadBruma",
   ] as const);
+  const uDof = ubicaciones(gl, progDof, [
+    "u_color",
+    "u_prof",
+    "u_texel",
+    "u_foco",
+    "u_rango",
+    "u_radioMax",
+    "u_muestras",
+  ] as const);
   const uComp = ubicaciones(gl, progComp, [
     "u_dof",
     "u_prof",
@@ -187,6 +197,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     datosTallos,
   );
   const escena = crearObjetivoEscena(gl, op.calidad.msaa);
+  const desenfoque = crearObjetivoSimple(gl);
   const triangulo = crearTriangulo(gl);
 
   const usar = (prog: WebGLProgram) => gl.useProgram(prog);
@@ -270,6 +281,23 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     escena.resolver();
   }
 
+  function enfocar(e: EstadoCuadro, foco: number) {
+    desenfoque.usar();
+    usar(progDof);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, escena.texColor);
+    gl.uniform1i(uDof.u_color, 0);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, escena.texProf);
+    gl.uniform1i(uDof.u_prof, 1);
+    gl.uniform2f(uDof.u_texel, 1 / e.ancho, 1 / e.alto);
+    gl.uniform1f(uDof.u_foco, foco);
+    gl.uniform1f(uDof.u_rango, p.foco.rango);
+    gl.uniform1f(uDof.u_radioMax, p.foco.radioMax * e.dpr);
+    gl.uniform1i(uDof.u_muestras, op.calidad.muestrasDof);
+    triangulo.dibujar();
+  }
+
   function componer(e: EstadoCuadro, color: WebGLTexture, foco: number) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, e.ancho, e.alto);
@@ -295,15 +323,22 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
   return {
     dientes,
     dibujar(e: EstadoCuadro) {
+      // el foco respira apenas, y se abre un poco con cada ráfaga
+      const r = p.foco.respiracion;
+      const foco =
+        p.foco.distancia * (1 + 0.03 * Math.sin(e.tiempo * 0.2) * r) + e.rafaga.fuerza * r;
       dibujarEscena(e);
-      componer(e, escena.texColor, p.foco.distancia);
+      enfocar(e, foco);
+      componer(e, desenfoque.tex, foco);
     },
     redimensionar(ancho: number, alto: number) {
       escena.redimensionar(ancho, alto);
+      desenfoque.redimensionar(ancho, alto);
     },
     destruir() {
-      for (const r of [pasto, tallos, cabezas, escena, triangulo]) r.destruir();
-      for (const prog of [progCielo, progPasto, progDiente, progComp]) gl.deleteProgram(prog);
+      for (const r of [pasto, tallos, cabezas, escena, desenfoque, triangulo]) r.destruir();
+      for (const prog of [progCielo, progPasto, progDiente, progDof, progComp])
+        gl.deleteProgram(prog);
     },
   };
 }
