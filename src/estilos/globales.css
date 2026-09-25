@@ -29,3 +29,17 @@ body {
   background: #dfe6cf;
   color: var(--color-enfasis);
 }
+
+/* sin WebGL2: una sugerencia estática del prado, con los mismos bordes disueltos */
+.respaldo-prado {
+  background: linear-gradient(180deg, #f1efe6 0%, #f2eee1 30%, #d9dcc4 42%, #b9c49d 70%, #a9b78c 100%);
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent),
+    linear-gradient(180deg, transparent, #000 22%, #000 86%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent),
+    linear-gradient(180deg, transparent, #000 22%, #000 86%, transparent);
+  mask-composite: intersect;
+  filter: blur(6px);
+}

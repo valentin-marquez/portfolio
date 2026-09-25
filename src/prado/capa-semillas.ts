@@ -123,8 +123,9 @@ export function montarCapaSemillas(
     anterior = ahora;
     const tiempo = ahora / 1000;
     const progreso = fuente.progreso();
-    const anchoCss = window.innerWidth;
-    const altoCss = window.innerHeight;
+    // el tamaño del canvas (sin la barra de scroll) es el del diseño: la columna se centra ahí
+    const anchoCss = canvas.clientWidth || window.innerWidth;
+    const altoCss = canvas.clientHeight || window.innerHeight;
     actualizarSemillas(semillas, {
       progreso,
       tiempo,

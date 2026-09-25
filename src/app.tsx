@@ -1,37 +1,85 @@
-import { useEffect, useRef } from "react";
-import { elegirCalidad } from "./prado/calidad";
-import { montarPrado } from "./prado/motor";
-import { crearParametros } from "./prado/parametros";
+import { useEffect } from "react";
+import { crearMotorSonido } from "./audio/ambiente";
+import { type Almacen, crearControlAudio } from "./audio/control";
+import { calcularProgreso, escena } from "./estado/escena";
+import { pasoTiempo } from "./prado/motor";
+import { influenciaScroll, intensidad } from "./prado/viento";
+import { CapaSemillas } from "./secciones/capa-semillas";
+import { Cierre } from "./secciones/cierre";
+import { Experimentos } from "./secciones/experimentos";
+import { Hero } from "./secciones/hero";
+import { Intro } from "./secciones/intro";
+import { SobreMi } from "./secciones/sobre-mi";
 
-// Montaje provisional para ver el motor mientras se arma la página (Tarea 10 lo reemplaza).
-const parametros = crearParametros();
+function almacenLocal(): Almacen | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
 
 export function App() {
-  const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const prado = montarPrado(canvas, {
-      semilla: 1,
-      dientes: 5,
-      parametros,
-      calidad: elegirCalidad({
-        anchoCss: innerWidth,
-        dpr: devicePixelRatio || 1,
-        nucleos: navigator.hardwareConcurrency || 4,
-      }),
-      reducirMovimiento: false,
+    // scroll → progreso y velocidad; los prados reciben la velocidad y la acotan ellos mismos
+    let yAnterior = window.scrollY;
+    let tAnterior = performance.now();
+    const alScroll = () => {
+      const ahora = performance.now();
+      const dt = Math.max(1, ahora - tAnterior);
+      escena.velocidad = ((window.scrollY - yAnterior) / dt) * 1000;
+      yAnterior = window.scrollY;
+      tAnterior = ahora;
+      escena.progreso = calcularProgreso(
+        window.scrollY,
+        document.documentElement.scrollHeight,
+        window.innerHeight,
+      );
+      escena.pradoHero?.fijarScroll(escena.velocidad);
+      escena.pradoCierre?.fijarScroll(escena.velocidad);
+    };
+    window.addEventListener("scroll", alScroll, { passive: true });
+    alScroll();
+
+    const audio = crearControlAudio({
+      crearMotor: () => crearMotorSonido(),
+      almacen: almacenLocal(),
+      ventana: window,
+      documento: document,
     });
-    return () => prado?.destruir();
+
+    // latido: el mismo viento para las semillas y el audio
+    let raf = 0;
+    let anterior: number | null = null;
+    let influencia = 0;
+    const latido = (ahora: number) => {
+      const dt = pasoTiempo(anterior, ahora);
+      anterior = ahora;
+      influencia = influenciaScroll(influencia, escena.velocidad, dt);
+      escena.velocidad *= Math.exp(-dt * 4);
+      escena.viento = intensidad(ahora / 1000, 0, influencia);
+      audio.fijarViento(escena.viento);
+      raf = requestAnimationFrame(latido);
+    };
+    raf = requestAnimationFrame(latido);
+
+    return () => {
+      window.removeEventListener("scroll", alScroll);
+      cancelAnimationFrame(raf);
+      audio.destruir();
+    };
   }, []);
+
   return (
-    <main>
-      <div className="mx-auto mt-[6vh] h-[62vh] w-[min(1000px,calc(100%-32px))]">
-        <canvas ref={ref} className="block h-full w-full" />
-      </div>
-      <p className="mx-auto mt-10 w-[560px] max-w-[calc(100%-32px)]">
-        Hola, soy <span className="text-enfasis font-medium">Valentín</span>.
-      </p>
-    </main>
+    <>
+      <CapaSemillas />
+      <main className="relative z-10">
+        <Hero />
+        <Intro />
+        <Experimentos />
+        <SobreMi />
+        <Cierre />
+      </main>
+    </>
   );
 }

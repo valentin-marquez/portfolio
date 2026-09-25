@@ -20,7 +20,9 @@ void main() {
   float aquenio = smoothstep(0.1 + blando, 0.0, length((q - vec2(0.0, -0.82)) * vec2(3.0, 1.2)));
   float blanco = max(hebra * 0.7, puntas);
   float pardo = max(pico * 0.6, aquenio);
-  vec3 c = mix(vec3(0.99, 0.98, 0.95), vec3(0.55, 0.45, 0.35), pardo / max(blanco + pardo, 1e-3));
+  // gris cálido y no blanco: sobre el crema de la página un vilano blanco desaparece
+  vec3 vilano = mix(vec3(0.7, 0.68, 0.62), vec3(0.86, 0.84, 0.79), puntas);
+  vec3 c = mix(vilano, vec3(0.5, 0.41, 0.31), pardo / max(blanco + pardo, 1e-3));
   float alfa = clamp(blanco + pardo, 0.0, 1.0) * v_alfa * (1.0 - v_des * 0.5);
   o = vec4(c * alfa, alfa);
 }
