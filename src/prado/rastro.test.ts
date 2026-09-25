@@ -78,4 +78,27 @@ describe("rastro del puntero", () => {
     expect(u[2]).toBeCloseTo((m?.dx ?? 0) * (m?.fuerza ?? 0));
     expect(u[u.length - 1]).toBe(0);
   });
+
+  it("el empuje entra suave: una muestra recién dejada empieza débil y crece en una fracción de segundo", () => {
+    const r = crearRastro();
+    let p = { x: 0, z: -6 };
+    // dos cuadros rápidos dejan la primera muestra
+    for (let i = 0; i < 3 && r.muestras.length === 0; i++) {
+      p = { x: p.x + 0.08, z: p.z };
+      actualizarRastro(r, p, dt);
+    }
+    const recien = r.muestras[0]?.fuerza ?? 0;
+    for (let t = 0; t < 0.2; t += dt) actualizarRastro(r, p, dt);
+    const despues = r.muestras[0]?.fuerza ?? 0;
+    expect(recien).toBeLessThan(0.35);
+    expect(despues).toBeGreaterThan(recien * 1.5);
+  });
+
+  it("un gesto a velocidad normal (1,5 m/s) empuja a la mitad, no al máximo", () => {
+    const r = crearRastro();
+    mover(r, { x: 0, z: -6 }, { x: 1.5, z: 0 }, 1);
+    const maxima = Math.max(...r.muestras.map((m) => m.pico));
+    expect(maxima).toBeGreaterThan(0.4);
+    expect(maxima).toBeLessThan(0.6);
+  });
 });

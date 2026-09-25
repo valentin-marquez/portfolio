@@ -472,7 +472,7 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
       }
       actualizarRastro(rastro, tocado, dt);
       // entra rápido y vuelve despacio, como el pasto real
-      const tasaPuntero = tocado ? 3 : 1.2;
+      const tasaPuntero = tocado ? 1.5 : 1.2;
       fuerzaPuntero += ((tocado ? 1 : 0) - fuerzaPuntero) * (1 - Math.exp(-dt * tasaPuntero));
       const radioQuieto = 0.35 + 0.035 * Math.hypot(bajoCursor.x, bajoCursor.z);
 

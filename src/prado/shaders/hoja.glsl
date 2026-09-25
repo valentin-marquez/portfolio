@@ -54,10 +54,12 @@ vec3 posicionHoja(vec4 raiz, vec4 forma, float v, float lado, out vec3 normal, o
   float abierto = u_puntero.w * exp(-(dP * dP) / (u_puntero.z * u_puntero.z));
   vec2 dirAbierto = dP > 1e-4 ? aPuntero / dP : vec2(0.0);
 
-  // los tallos de diente de león son más rígidos que el pasto: el viento los mece, no los dobla
-  float rigidez = forma.z > 1.5 ? 0.35 : 1.0;
-  vec2 flexion = dirInclina * forma.x
-               + (dirViento * viento + (empujeRastro(base) * 0.6 + dirAbierto * abierto * 0.22) * u_movimiento) * rigidez;
+  // los tallos de diente de león son más rígidos que el pasto: el viento los mece, no los dobla,
+  // y la mano no los mueve: al pasar el cursor solo se aparta el pasto
+  bool esTallo = forma.z > 1.5;
+  float rigidez = esTallo ? 0.35 : 1.0;
+  vec2 mano = esTallo ? vec2(0.0) : (empujeRastro(base) * 0.35 + dirAbierto * abierto * 0.1) * u_movimiento;
+  vec2 flexion = dirInclina * forma.x + dirViento * viento * rigidez + mano;
   float largo = length(flexion);
   vec2 dirFlexion = largo > 1e-4 ? flexion / largo : dirInclina;
   float angulo = min(largo, 1.2);  // ninguna hoja se dobla más de ~70°: no se meten bajo el suelo

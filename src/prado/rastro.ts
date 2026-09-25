@@ -7,8 +7,10 @@ export const MUESTRAS_RASTRO = 12;
 const RECUPERACION = 1.1;
 /** distancia mínima en el suelo (m) para dejar una muestra nueva */
 const PASO = 0.03;
-/** velocidad (m/s) que da un empuje completo */
-const VELOCIDAD_PLENA = 1.5;
+/** velocidad (m/s) que da un empuje completo: un gesto normal empuja a la mitad */
+const VELOCIDAD_PLENA = 3;
+/** constante de tiempo de la entrada del empuje: el pasto cede de a poco, no de golpe */
+const ATAQUE = 0.12;
 
 export interface Muestra {
   x: number;
@@ -16,6 +18,9 @@ export interface Muestra {
   /** dirección del movimiento, normalizada */
   dx: number;
   dz: number;
+  /** hasta dónde llega el empuje de esta muestra; se apaga despacio */
+  pico: number;
+  /** el empuje actual: sube hacia el pico y después lo sigue al apagarse */
   fuerza: number;
 }
 
@@ -36,8 +41,12 @@ export function actualizarRastro(
   dt: number,
 ): void {
   const apagado = Math.exp(-dt / RECUPERACION);
-  for (const m of r.muestras) m.fuerza *= apagado;
-  r.muestras = r.muestras.filter((m) => m.fuerza > 0.01);
+  const subida = 1 - Math.exp(-dt / ATAQUE);
+  for (const m of r.muestras) {
+    m.pico *= apagado;
+    m.fuerza += (m.pico - m.fuerza) * subida;
+  }
+  r.muestras = r.muestras.filter((m) => m.pico > 0.01 || m.fuerza > 0.01);
 
   if (!punto) {
     r.ultimo = null;
@@ -59,7 +68,8 @@ export function actualizarRastro(
     z: punto.z,
     dx: mx / distancia,
     dz: mz / distancia,
-    fuerza: Math.min(1, velocidad / VELOCIDAD_PLENA),
+    pico: Math.min(1, velocidad / VELOCIDAD_PLENA),
+    fuerza: Math.min(1, velocidad / VELOCIDAD_PLENA) * 0.15,
   });
   if (r.muestras.length > MUESTRAS_RASTRO) r.muestras.shift();
   r.ultimo = { ...punto };
