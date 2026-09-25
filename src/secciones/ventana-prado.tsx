@@ -91,7 +91,7 @@ export function VentanaPrado({
       alMontar(null, null);
       montado.destruir();
     };
-  }, [dientes, semilla, alMontar]);
+  }, [dientes, semilla, foco, radioCabeza, alMontar]);
 
   return (
     <div
