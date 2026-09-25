@@ -5,6 +5,7 @@ in float v_prof;
 uniform vec3 u_colorSol;
 uniform vec3 u_bruma;
 uniform float u_densidadBruma;
+uniform float u_tramado;  // 1 sin MSAA: la cobertura se resuelve con un tramado estocástico
 
 layout(location = 0) out vec4 o_color;
 layout(location = 1) out vec4 o_prof;
@@ -21,6 +22,9 @@ void main() {
   float centro = smoothstep(0.16, 0.1, r);
   float cobertura = clamp(max(max(hebra * 0.9, velo), max(punta, centro)), 0.0, 1.0);
   if (cobertura < 0.02) discard;
+  if (u_tramado > 0.5 && cobertura < fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453)) {
+    discard;
+  }
   vec3 c = mix(vec3(0.97, 0.96, 0.92), vec3(0.62, 0.55, 0.42), centro) + u_colorSol * 0.06;
   c = mix(c, u_bruma, 1.0 - exp(-v_prof * u_densidadBruma));
   o_color = vec4(c, cobertura);

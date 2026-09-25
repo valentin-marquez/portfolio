@@ -158,6 +158,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     "u_colorSol",
     "u_bruma",
     "u_densidadBruma",
+    "u_tramado",
   ] as const);
   const uDof = ubicaciones(gl, progDof, [
     "u_color",
@@ -270,6 +271,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     c3(uDiente.u_colorSol, p.luz.colorSol);
     c3(uDiente.u_bruma, p.bruma.color);
     gl.uniform1f(uDiente.u_densidadBruma, p.bruma.densidad);
+    gl.uniform1f(uDiente.u_tramado, op.calidad.msaa > 0 ? 0 : 1);
     // el alfa de las cabezas se vuelve cobertura de muestras: bordes suaves sin ordenar ni mezclar
     gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE);
     gl.bindVertexArray(cabezas.vao);
