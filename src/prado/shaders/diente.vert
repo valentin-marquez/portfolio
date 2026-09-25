@@ -5,9 +5,11 @@ layout(location = 2) in vec4 a_forma;
 
 uniform float u_radioCabeza;
 uniform float u_aspecto;
+uniform float u_anchoPx;  // ancho del objetivo en px, para saber qué tan grande se ve
 
 out vec2 v_q;
 out float v_prof;
+out float v_pixeles;
 
 void main() {
   vec3 normal;
@@ -18,5 +20,6 @@ void main() {
   float r = abs(borde.x / borde.w - clip.x / clip.w);
   v_q = a_esquina;
   v_prof = length(punta - u_camara);
+  v_pixeles = r * u_anchoPx * 0.5;
   gl_Position = clip + vec4(a_esquina * r * vec2(1.0, u_aspecto), 0.0, 0.0) * clip.w;
 }

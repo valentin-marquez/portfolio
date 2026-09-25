@@ -30,7 +30,12 @@ import { influenciaScroll, type Rafaga, rafaga } from "./viento";
 
 export interface OpcionesPrado {
   semilla: number;
-  dientes: number;
+  /** cuántos dientes de león repartir, o la lista exacta de flores puestas a mano */
+  dientes: number | Diente[];
+  /** foco propio de esta ventana (por ejemplo, poco profundo para una flor de cerca) */
+  foco?: Partial<Parametros["foco"]>;
+  /** radio de las cabezas en esta ventana (m) */
+  radioCabeza?: number;
   /** compartido y mutable: el panel de depuración lo cambia en vivo */
   parametros: Parametros;
   calidad: Calidad;
@@ -181,7 +186,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     "u_colorSol",
     "u_bruma",
     "u_densidadBruma",
-    "u_tramado",
+    "u_anchoPx",
   ] as const);
   const uDof = ubicaciones(gl, progDof, [
     "u_color",
@@ -212,7 +217,10 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     malla,
     generarHojas(op.calidad.hojas, p.pasto, p.camara.fov, 2.2, op.semilla),
   );
-  const dientes: Diente[] = generarDientes(op.dientes, p, aspecto, op.semilla);
+  const dientes: Diente[] = Array.isArray(op.dientes)
+    ? op.dientes
+    : generarDientes(op.dientes, p, aspecto, op.semilla);
+  const focoActual = () => ({ ...p.foco, ...op.foco });
   const datosTallos = instanciasTallos(dientes);
   const tallos = crearVaoInstancias(gl, malla, datosTallos);
   const cabezas = crearVaoInstancias(
@@ -291,17 +299,18 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     usar(progDiente);
     fijarHoja(uDiente, e);
     gl.uniform1f(uDiente.u_aspecto, e.ancho / e.alto);
-    gl.uniform1f(uDiente.u_radioCabeza, p.diente.radioCabeza);
+    gl.uniform1f(uDiente.u_radioCabeza, op.radioCabeza ?? p.diente.radioCabeza);
     c3(uDiente.u_colorSol, p.luz.colorSol);
     c3(uDiente.u_bruma, p.bruma.color);
     gl.uniform1f(uDiente.u_densidadBruma, p.bruma.densidad);
-    gl.uniform1f(uDiente.u_tramado, op.calidad.msaa > 0 ? 0 : 1);
-    // el alfa de las cabezas se vuelve cobertura de muestras: bordes suaves sin ordenar ni mezclar
-    gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+    gl.uniform1f(uDiente.u_anchoPx, e.ancho);
+    // las cabezas son translúcidas: se mezclan con alfa premultiplicado sobre el pasto ya dibujado
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.bindVertexArray(cabezas.vao);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, cabezas.cantidad);
     gl.bindVertexArray(null);
-    gl.disable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+    gl.disable(gl.BLEND);
     gl.disable(gl.DEPTH_TEST);
 
     escena.resolver();
@@ -318,8 +327,8 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     gl.uniform1i(uDof.u_prof, 1);
     gl.uniform2f(uDof.u_texel, 1 / e.ancho, 1 / e.alto);
     gl.uniform1f(uDof.u_foco, foco);
-    gl.uniform1f(uDof.u_rango, p.foco.rango);
-    gl.uniform1f(uDof.u_radioMax, p.foco.radioMax * e.dpr);
+    gl.uniform1f(uDof.u_rango, focoActual().rango);
+    gl.uniform1f(uDof.u_radioMax, focoActual().radioMax * e.dpr);
     gl.uniform1i(uDof.u_muestras, op.calidad.muestrasDof);
     triangulo.dibujar();
   }
@@ -341,7 +350,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     gl.uniform1f(uComp.u_grano, p.grano);
     gl.uniform1f(uComp.u_tiempo, e.tiempo);
     gl.uniform1f(uComp.u_foco, foco);
-    gl.uniform1f(uComp.u_rango, p.foco.rango);
+    gl.uniform1f(uComp.u_rango, focoActual().rango);
     gl.uniform1i(uComp.u_vista, p.vista);
     triangulo.dibujar();
   }
@@ -350,12 +359,13 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     dientes,
     dibujar(e: EstadoCuadro) {
       // el foco respira apenas, y se abre un poco con cada ráfaga
-      const r = p.foco.respiracion;
-      const foco =
-        p.foco.distancia * (1 + 0.03 * Math.sin(e.tiempo * 0.2) * r) + e.rafaga.fuerza * r;
+      const f = focoActual();
+      const r = f.respiracion;
+      const distancia =
+        f.distancia * (1 + 0.03 * Math.sin(e.tiempo * 0.2) * r) + e.rafaga.fuerza * r;
       dibujarEscena(e);
-      enfocar(e, foco);
-      componer(e, desenfoque.tex, foco);
+      enfocar(e, distancia);
+      componer(e, desenfoque.tex, distancia);
     },
     redimensionar(ancho: number, alto: number) {
       escena.redimensionar(ancho, alto);

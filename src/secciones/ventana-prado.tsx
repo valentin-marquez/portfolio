@@ -4,13 +4,19 @@ import { elegirCalidad } from "@/prado/calidad";
 import { soportaWebGL2 } from "@/prado/gl/soporte";
 import { montarPrado, type Prado } from "@/prado/motor";
 import type { Parametros } from "@/prado/parametros";
+import type { Diente } from "@/prado/pasto";
 
 interface Props {
   alto: string;
   /** ancho CSS de la ventana; por defecto min(1000px, 100% − 32px) */
   ancho?: string;
-  dientes: number;
+  /** cuántos dientes de león, o las flores puestas a mano */
+  dientes: number | Diente[];
   semilla: number;
+  /** foco propio de esta ventana */
+  foco?: Partial<Parametros["foco"]>;
+  /** radio de las cabezas en esta ventana (m) */
+  radioCabeza?: number;
   /** avisa el prado montado (o null al desmontar) y el elemento de la ventana */
   alMontar: (prado: Prado | null, elemento: HTMLDivElement | null) => void;
   /** cada cuadro la página puede mover la cámara, por ejemplo según el scroll */
@@ -21,7 +27,16 @@ interface Props {
  * Una ventana del prado: canvas WebGL2 con los bordes disueltos. Sin WebGL2, o mientras el contexto
  * está perdido o falló, se ve un respaldo estático; el canvas sigue montado para poder recuperarse.
  */
-export function VentanaPrado({ alto, ancho, dientes, semilla, alMontar, ajustarCamara }: Props) {
+export function VentanaPrado({
+  alto,
+  ancho,
+  dientes,
+  semilla,
+  foco,
+  radioCabeza,
+  alMontar,
+  ajustarCamara,
+}: Props) {
   const contenedor = useRef<HTMLDivElement>(null);
   // el ajuste de cámara cambia de identidad entre renders; se lee por ref para no remontar el prado
   const ajuste = useRef(ajustarCamara);
@@ -42,6 +57,8 @@ export function VentanaPrado({ alto, ancho, dientes, semilla, alMontar, ajustarC
       prado = montarPrado(canvas, {
         semilla,
         dientes,
+        foco,
+        radioCabeza,
         parametros: escena.parametros,
         calidad: elegirCalidad({
           anchoCss: window.innerWidth,

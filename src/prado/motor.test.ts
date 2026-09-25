@@ -156,3 +156,18 @@ describe("montarPrado controlado desde afuera", () => {
     expect(vistas).toEqual([1.6]);
   });
 });
+
+describe("una flor puesta a mano", () => {
+  it("su cabeza queda donde se la puso: sola, a la derecha", () => {
+    const f = crearGlFalso();
+    const { prado } = montar(f, {
+      dientes: [{ x: 0.55, z: -3.2, altura: 0.78 }],
+      ajustarCamara: (base) => ({ ...base, fov: 20, altura: 0.85, mirarY: 0.3 }),
+    });
+    alObservar?.([{ isIntersecting: true }]);
+    cuadros.at(-1)?.(16);
+    const cabezas = prado?.cabezasEnPantalla() ?? [];
+    expect(cabezas).toHaveLength(1);
+    expect(cabezas[0]?.x).toBeGreaterThan(600);
+  });
+});

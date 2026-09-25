@@ -1,34 +1,56 @@
-// Vilanos: velo esponjoso con hebras radiales, puntas claras y un centro pardo.
+// Cabeza de diente de león (el "reloj"): hebras radiales de largo propio, cada una con su paraguas de
+// vilano en la punta, sobre un volumen translúcido que brilla en el borde porque el sol viene de atrás.
+// El detalle crece con el tamaño en pantalla: de lejos es un copo, de cerca se ven las hebras.
 in vec2 v_q;
 in float v_prof;
+in float v_pixeles;
 
 uniform vec3 u_colorSol;
 uniform vec3 u_bruma;
 uniform float u_densidadBruma;
-uniform float u_tramado;  // 1 sin MSAA: la cobertura se resuelve con un tramado estocástico
 
 layout(location = 0) out vec4 o_color;
 layout(location = 1) out vec4 o_prof;
 
+float azar(float n) { return fract(sin(n * 12.9898) * 43758.5453); }
+
 void main() {
   float r = length(v_q);
   if (r > 1.0) discard;
-  float a = atan(v_q.y, v_q.x);
-  // cada hebra con su propio largo y su punta solo en el extremo: de cerca se ve un vilano, no un anillo
-  float giro = a / 6.2831853 * 22.0 + snoise(vec3(v_q * 2.5, 0.0)) * 0.25;
+  float a = atan(v_q.y, v_q.x + 1e-5);
+  float n = clamp(v_pixeles * 1.6, 24.0, 140.0);
+  float giro = a / 6.2831853 * n;
+  float indice = floor(giro);
+  float largo = 0.7 + 0.28 * azar(indice);
   float fil = abs(fract(giro) - 0.5);
-  float largo = 0.78 + 0.2 * fract(sin(floor(giro) * 12.9898) * 43758.5453);
-  float hebra = smoothstep(0.22, 0.0, fil) * smoothstep(largo, largo - 0.55, r);
-  float velo = smoothstep(0.8, 0.3, r) * 0.5;
-  float punta = smoothstep(0.1, 0.0, abs(r - largo)) * smoothstep(0.32, 0.0, fil) * 0.8;
-  float centro = smoothstep(0.16, 0.1, r);
-  float cobertura = clamp(max(max(hebra * 0.9, velo), max(punta, centro)), 0.0, 1.0);
-  if (cobertura < 0.02) discard;
-  if (u_tramado > 0.5 && cobertura < fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453)) {
-    discard;
+  // de cerca las hebras se afinan: en proporción al tamaño, no al ángulo
+  float ancho = mix(0.2, 0.07, clamp(v_pixeles / 70.0, 0.0, 1.0));
+  float hebra = smoothstep(ancho, 0.0, fil) * smoothstep(largo + 0.02, largo - 0.12, r) * smoothstep(0.07, 0.2, r);
+  float angPunta = (indice + 0.5) / n * 6.2831853;
+  vec2 punta = vec2(cos(angPunta), sin(angPunta)) * largo;
+  float paraguas = smoothstep(0.08 + 0.05 * azar(indice + 3.1), 0.0, length(v_q - punta));
+  // la cabeza es una esfera: muchas semillas apuntan hacia la cámara y sus paraguas llenan el disco,
+  // repartidos en capas por dentro; solo se distinguen cuando la cabeza se ve grande
+  float interior = 0.0;
+  for (int k = 0; k < 3; k++) {
+    float capa = 0.28 + 0.2 * float(k);
+    float nk = max(6.0, floor(n * capa * 0.85));
+    float gk = a / 6.2831853 * nk + azar(float(k) * 7.3);
+    float ik = floor(gk);
+    float ak = (ik + 0.5 + (azar(ik + float(k) * 13.0) - 0.5) * 0.7) / nk * 6.2831853 - azar(float(k) * 7.3) / nk * 6.2831853;
+    float rk = capa + (azar(ik * 3.7 + float(k)) - 0.5) * 0.14;
+    interior = max(interior, smoothstep(0.075, 0.0, length(v_q - vec2(cos(ak), sin(ak)) * rk)));
   }
-  vec3 c = mix(vec3(0.97, 0.96, 0.92), vec3(0.62, 0.55, 0.42), centro) + u_colorSol * 0.06;
+  interior *= smoothstep(18.0, 45.0, v_pixeles) * 0.75;
+  // volumen translúcido, más luminoso hacia el borde (contraluz)
+  float volumen = smoothstep(1.0, 0.45, r) * 0.34 + smoothstep(0.5, 0.88, r) * smoothstep(1.0, 0.88, r) * 0.26;
+  float centro = smoothstep(0.1, 0.06, r);
+  float alfa = clamp(max(max(hebra * 0.6, paraguas * 0.9), max(max(volumen, interior), centro)), 0.0, 1.0);
+  if (alfa < 0.02) discard;
+  vec3 blanco = vec3(0.98, 0.97, 0.93) + u_colorSol * 0.12 * smoothstep(0.4, 0.95, r);
+  vec3 c = mix(blanco, vec3(0.55, 0.47, 0.36), centro);
   c = mix(c, u_bruma, 1.0 - exp(-v_prof * u_densidadBruma));
-  o_color = vec4(c, cobertura);
+  // alfa premultiplicado: se mezcla sobre el pasto; la profundidad se reemplaza donde hay cabeza
+  o_color = vec4(c * alfa, alfa);
   o_prof = vec4(v_prof, 0.0, 0.0, 1.0);
 }

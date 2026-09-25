@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calcularProgreso, destinosAterrizaje } from "./escena";
+import { calcularProgreso, destinosAterrizaje, destinosJuntoALaFlor } from "./escena";
 
 describe("calcularProgreso", () => {
   it("va de 0 arriba a 1 abajo", () => {
@@ -29,5 +29,19 @@ describe("destinosAterrizaje", () => {
       expect(p.y).toBeGreaterThan(rect.top + rect.height * 0.5);
       expect(p.y).toBeLessThan(rect.top + rect.height);
     }
+  });
+});
+
+describe("destinosJuntoALaFlor", () => {
+  it("las semillas vuelven a la flor: aterrizan cerca, en el pasto bajo su cabeza, a ambos lados", () => {
+    const cabeza = { x: 900, y: 300 };
+    const d = destinosJuntoALaFlor(cabeza, 6);
+    expect(d).toHaveLength(6);
+    for (const p of d) {
+      expect(Math.hypot(p.x - cabeza.x, p.y - cabeza.y)).toBeLessThan(200);
+      expect(p.y).toBeGreaterThan(cabeza.y + 20);
+    }
+    expect(d.some((p) => p.x < cabeza.x)).toBe(true);
+    expect(d.some((p) => p.x > cabeza.x)).toBe(true);
   });
 });

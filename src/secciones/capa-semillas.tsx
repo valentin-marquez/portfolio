@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { useEffect, useRef } from "react";
-import { destinosAterrizaje, escena } from "@/estado/escena";
+import { destinosAterrizaje, destinosJuntoALaFlor, escena } from "@/estado/escena";
 import { montarCapaSemillas } from "@/prado/capa-semillas";
 
 const CANTIDAD_DESTINOS = 8;
@@ -19,6 +19,9 @@ export function CapaSemillas() {
         viento: () => escena.viento,
         origenes: () => escena.pradoHero?.cabezasEnPantalla() ?? [],
         destinos: () => {
+          // si el cierre tiene su flor, las semillas vuelven a ella
+          const flor = escena.pradoCierre?.cabezasEnPantalla()[0];
+          if (flor) return destinosJuntoALaFlor(flor, CANTIDAD_DESTINOS);
           const el = escena.elCierre;
           return el ? destinosAterrizaje(el.getBoundingClientRect(), CANTIDAD_DESTINOS) : [];
         },

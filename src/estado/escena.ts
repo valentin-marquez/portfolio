@@ -58,3 +58,14 @@ export function destinosAterrizaje(rect: Rect, n: number): Punto[] {
     };
   });
 }
+
+/** Las semillas vuelven a la flor del cierre: aterrizan en el pasto bajo su cabeza, a ambos lados. */
+export function destinosJuntoALaFlor(cabeza: Punto, n: number): Punto[] {
+  return Array.from({ length: n }, (_, i) => {
+    const f = n > 1 ? i / (n - 1) : 0.5;
+    return {
+      x: cabeza.x + (f - 0.55) * 260,
+      y: cabeza.y + 60 + 55 * Math.abs(Math.sin(i * 1.9)),
+    };
+  });
+}
