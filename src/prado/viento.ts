@@ -22,15 +22,71 @@ export function suave(a: number, b: number, v: number): number {
   return t * t * (3 - 2 * t);
 }
 
-export function rafaga(t: number, semilla = 0): Rafaga {
-  const i = Math.floor(t / PERIODO_RAFAGA);
-  const k = t / PERIODO_RAFAGA - i;
+/** Cómo sopla: cada cuánto llega una ráfaga, qué tan fuerte (0..1) y hacia dónde cruza la ola. */
+export interface Clima {
+  periodo: number;
+  fuerza: number;
+  /** 1: la ola cruza de izquierda a derecha; -1: de derecha a izquierda */
+  sentido: 1 | -1;
+}
+
+export const CLIMA_INICIAL: Clima = { periodo: PERIODO_RAFAGA, fuerza: 1, sentido: 1 };
+
+/**
+ * Reloj del viento. La fase avanza a 1/periodo por segundo; al cambiar el clima se empalma en el
+ * mismo punto, así la ola no salta. La fuerza y el sentido nuevos rigen desde el ciclo siguiente:
+ * la ráfaga que está pasando termina como empezó.
+ */
+export interface RelojViento {
+  t0: number;
+  fase0: number;
+  clima: Clima;
+  anterior: Clima;
+  cicloDesde: number;
+}
+
+export function crearReloj(clima: Clima = CLIMA_INICIAL): RelojViento {
+  return { t0: 0, fase0: 0, clima, anterior: clima, cicloDesde: 0 };
+}
+
+export function faseEn(r: RelojViento, t: number): number {
+  return r.fase0 + (t - r.t0) / r.clima.periodo;
+}
+
+function climaDelCiclo(r: RelojViento, ciclo: number): Clima {
+  return ciclo >= r.cicloDesde ? r.clima : r.anterior;
+}
+
+export function cambiarClima(r: RelojViento, t: number, clima: Clima): void {
+  const fase = faseEn(r, t);
+  const ciclo = Math.floor(fase);
+  r.anterior = climaDelCiclo(r, ciclo);
+  r.fase0 = fase;
+  r.t0 = t;
+  r.clima = clima;
+  r.cicloDesde = ciclo + 1;
+}
+
+/** El reloj que comparten el pasto, las flores, las semillas y el audio. */
+export const relojCompartido = crearReloj();
+
+/** Aplica el viento real del visitante al reloj compartido, en el instante t (segundos). */
+export function fijarClima(clima: Clima, t: number): void {
+  cambiarClima(relojCompartido, t, clima);
+}
+
+export function rafaga(t: number, semilla = 0, reloj: RelojViento = relojCompartido): Rafaga {
+  const fase = faseEn(reloj, t);
+  const i = Math.floor(fase);
+  const k = fase - i;
+  const clima = climaDelCiclo(reloj, i);
   const inicio = 0.1 + 0.25 * hash(i + semilla * 17.13);
   const u = Math.min(1, Math.max(0, (k - inicio) / DURACION));
   const activa = k >= inicio && k <= inicio + DURACION;
-  const amplitud = 0.6 + 0.4 * hash(i + 7 + semilla);
+  const amplitud = (0.6 + 0.4 * hash(i + 7 + semilla)) * clima.fuerza;
   const fuerza = activa ? Math.sin(Math.PI * suave(0, 1, u)) ** 2 * amplitud : 0;
-  return { fuerza, frente: -0.3 + 1.6 * u };
+  const recorrido = -0.3 + 1.6 * u;
+  return { fuerza, frente: clima.sentido === 1 ? recorrido : 1 - recorrido };
 }
 
 export function vientoEn(x: number, t: number, semilla = 0, extra = 0): number {

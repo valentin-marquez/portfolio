@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { crearMotorSonido } from "./audio/ambiente";
 import { type Almacen, crearControlAudio } from "./audio/control";
+import { cargarClimaDelVisitante } from "./clima/clima";
 import { calcularProgreso, escena, vientoDelLatido } from "./estado/escena";
 import { pasoTiempo, rafagaDelPrado } from "./prado/motor";
-import { influenciaScroll } from "./prado/viento";
+import { fijarClima, influenciaScroll } from "./prado/viento";
 import { CapaSemillas } from "./secciones/capa-semillas";
 import { Cierre } from "./secciones/cierre";
 import { Experimentos } from "./secciones/experimentos";
@@ -18,6 +19,17 @@ function almacenLocal(): Almacen | null {
     return null;
   }
 }
+
+function almacenDeSesion(): Almacen | null {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+// el viento real se pide una sola vez por carga (StrictMode monta los efectos dos veces en desarrollo)
+let climaPedido = false;
 
 export function App() {
   useEffect(() => {
@@ -40,6 +52,18 @@ export function App() {
     };
     window.addEventListener("scroll", alScroll, { passive: true });
     alScroll();
+
+    // el viento real de la zona del visitante marca el ritmo; si no llega, sigue la brisa por defecto
+    if (!climaPedido) {
+      climaPedido = true;
+      void cargarClimaDelVisitante({
+        fetch: window.fetch.bind(window),
+        almacen: almacenDeSesion(),
+        ahora: () => Date.now(),
+      }).then((clima) => {
+        if (clima) fijarClima(clima, performance.now() / 1000);
+      });
+    }
 
     const audio = crearControlAudio({
       crearMotor: () => crearMotorSonido(),

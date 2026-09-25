@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  CLIMA_INICIAL,
+  cambiarClima,
+  crearReloj,
+  faseEn,
   influenciaScroll,
   intensidad,
   PERIODO_RAFAGA,
@@ -79,5 +83,58 @@ describe("influenciaScroll", () => {
     let v = TOPE_INFLUENCIA;
     for (let i = 0; i < 600; i++) v = influenciaScroll(v, 0, 1 / 60);
     expect(v).toBeLessThan(0.001);
+  });
+});
+
+describe("el clima cambia el ritmo del viento sin saltos", () => {
+  const ventoso = { periodo: 6, fuerza: 0.9, sentido: -1 as const };
+
+  it("la fase es continua en el instante del cambio", () => {
+    const r = crearReloj();
+    const t0 = 37.3;
+    const antes = faseEn(r, t0 - 1e-6);
+    cambiarClima(r, t0, ventoso);
+    expect(faseEn(r, t0 + 1e-6)).toBeCloseTo(antes, 5);
+  });
+
+  it("después del cambio los ciclos duran el nuevo periodo", () => {
+    const r = crearReloj();
+    cambiarClima(r, 10, ventoso);
+    expect(faseEn(r, 10 + ventoso.periodo) - faseEn(r, 10)).toBeCloseTo(1, 9);
+  });
+
+  it("la ráfaga en curso termina como empezó: fuerza y sentido cambian desde el ciclo siguiente", () => {
+    const r = crearReloj();
+    // un instante en plena ráfaga del ciclo actual
+    let t = 0;
+    while (rafaga(t, 0, r).fuerza < 0.5) t += 0.05;
+    const enCurso = rafaga(t, 0, r);
+    cambiarClima(r, t, ventoso);
+    const despues = rafaga(t, 0, r);
+    expect(despues.fuerza).toBeCloseTo(enCurso.fuerza, 9);
+    expect(despues.frente).toBeCloseTo(enCurso.frente, 9);
+  });
+
+  it("con viento del este la ola cruza de derecha a izquierda", () => {
+    const r = crearReloj();
+    cambiarClima(r, 0, { ...CLIMA_INICIAL, sentido: -1 });
+    let anterior = Number.POSITIVE_INFINITY;
+    let vistos = 0;
+    // el ciclo 3 ya usa el clima nuevo
+    for (let k = 0; k < 1; k += 0.01) {
+      const x = rafaga((3 + k) * PERIODO_RAFAGA, 0, r);
+      if (x.fuerza > 0.01) {
+        expect(x.frente).toBeLessThanOrEqual(anterior);
+        anterior = x.frente;
+        vistos++;
+      }
+    }
+    expect(vistos).toBeGreaterThan(10);
+  });
+
+  it("la fuerza nunca pasa de 1, ni con el clima más ventoso", () => {
+    const r = crearReloj();
+    cambiarClima(r, 0, { periodo: 5, fuerza: 1, sentido: 1 });
+    for (let t = 0; t < 600; t += 0.1) expect(rafaga(t, 0, r).fuerza).toBeLessThanOrEqual(1);
   });
 });
