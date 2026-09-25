@@ -19,6 +19,10 @@ export function abrirDepuracion(p: Parametros): () => void {
     label: "movimiento",
     options: { "mirar al cielo": "cielo", subir: "sube", avanzar: "avanza" },
   });
+  panel.addBinding(p, "titulo", {
+    label: "título",
+    options: { "al frente → arriba": "frente", "siempre arriba": "arriba" },
+  });
 
   const camara = panel.addFolder({ title: "cámara", expanded: false });
   camara.addBinding(p.camara, "altura", { min: 0.3, max: 5, step: 0.05 });

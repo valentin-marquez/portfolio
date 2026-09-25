@@ -11,6 +11,7 @@ import { Experimentos } from "./secciones/experimentos";
 import { Hero } from "./secciones/hero";
 import { Intro } from "./secciones/intro";
 import { SobreMi } from "./secciones/sobre-mi";
+import { Presentacion } from "./variantes/cuatro";
 import { VarianteDos } from "./variantes/dos";
 import { VarianteUno } from "./variantes/uno";
 
@@ -115,7 +116,9 @@ export function App() {
   return (
     <>
       <CapaSemillas />
-      {variante === "1" ? (
+      {variante === "4" ? (
+        <Presentacion />
+      ) : variante === "1" ? (
         <VarianteUno />
       ) : variante === "2" ? (
         <VarianteDos />

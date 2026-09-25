@@ -43,3 +43,8 @@ body {
   mask-composite: intersect;
   filter: blur(6px);
 }
+
+/* presentación que avanza en su lugar: cada gesto de scroll lleva al paso siguiente */
+html.presentacion {
+  scroll-snap-type: y mandatory;
+}

@@ -33,6 +33,8 @@ export interface Parametros {
   vista: number;
   /** cómo se mueve la cámara del hero al scrollear (variante 1) */
   movimiento: "cielo" | "sube" | "avanza";
+  /** dónde va el título en la presentación: al frente del prado (y se acomoda arriba) o siempre arriba */
+  titulo: "frente" | "arriba";
 }
 
 export function crearParametros(): Parametros {
@@ -68,5 +70,6 @@ export function crearParametros(): Parametros {
     grano: 0.035,
     vista: 0,
     movimiento: "cielo",
+    titulo: "frente",
   };
 }

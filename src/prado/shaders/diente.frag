@@ -14,11 +14,13 @@ void main() {
   float r = length(v_q);
   if (r > 1.0) discard;
   float a = atan(v_q.y, v_q.x);
-  // pocas hebras visibles sobre un velo esponjoso; la cobertura va al MSAA (alpha-to-coverage)
-  float fil = abs(fract(a / 6.2831853 * 22.0 + snoise(vec3(v_q * 2.5, 0.0)) * 0.25) - 0.5);
-  float hebra = smoothstep(0.22, 0.0, fil) * smoothstep(1.0, 0.2, r);
-  float velo = smoothstep(1.0, 0.45, r) * 0.55;
-  float punta = smoothstep(0.14, 0.0, abs(r - 0.88)) * 0.7;
+  // cada hebra con su propio largo y su punta solo en el extremo: de cerca se ve un vilano, no un anillo
+  float giro = a / 6.2831853 * 22.0 + snoise(vec3(v_q * 2.5, 0.0)) * 0.25;
+  float fil = abs(fract(giro) - 0.5);
+  float largo = 0.78 + 0.2 * fract(sin(floor(giro) * 12.9898) * 43758.5453);
+  float hebra = smoothstep(0.22, 0.0, fil) * smoothstep(largo, largo - 0.55, r);
+  float velo = smoothstep(0.8, 0.3, r) * 0.5;
+  float punta = smoothstep(0.1, 0.0, abs(r - largo)) * smoothstep(0.32, 0.0, fil) * 0.8;
   float centro = smoothstep(0.16, 0.1, r);
   float cobertura = clamp(max(max(hebra * 0.9, velo), max(punta, centro)), 0.0, 1.0);
   if (cobertura < 0.02) discard;

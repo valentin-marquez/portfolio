@@ -24,6 +24,8 @@ export const escena = {
    * La variante con una sola pradera la recorta a la parte que no tapa el contenido.
    */
   zonaAterrizaje: null as null | (() => Rect | null),
+  /** ancho del contenido centrado que las semillas no deben cruzar */
+  columna: COLUMNA,
 };
 
 /**

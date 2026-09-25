@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { COLUMNA, destinosAterrizaje, escena } from "@/estado/escena";
+import { destinosAterrizaje, escena } from "@/estado/escena";
 import { montarCapaSemillas } from "@/prado/capa-semillas";
 
 const CANTIDAD_DESTINOS = 8;
@@ -26,7 +26,10 @@ export function CapaSemillas() {
           escena.zonaAterrizaje
             ? escena.zonaAterrizaje()
             : (escena.elCierre?.getBoundingClientRect() ?? null),
-        columna: COLUMNA,
+        // getter: cada composición puede ensanchar su contenido y las semillas lo respetan
+        get columna() {
+          return escena.columna;
+        },
         reducirMovimiento: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
       });
     } catch (error) {
