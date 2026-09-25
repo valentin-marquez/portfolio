@@ -22,9 +22,11 @@ void main() {
   if (u_vista == 1) c = vec3(1.0 - clamp(d / 40.0, 0.0, 1.0));
   if (u_vista == 2) c = vec3(clamp(abs(d - u_foco) / u_rango, 0.0, 1.0), 0.0, 0.0);
 
-  float n = snoise(vec3(v_uv * vec2(3.0, 2.0), u_tiempo * 0.02)) * u_ruidoBorde;
-  float mx = smoothstep(0.0, u_borde.x, v_uv.x + n) * smoothstep(0.0, u_borde.x, 1.0 - v_uv.x + n);
-  float my = smoothstep(0.0, u_borde.y, v_uv.y + n) * smoothstep(0.0, u_borde.y, 1.0 - v_uv.y + n);
+  // el ruido solo mete el borde hacia adentro: en el límite del canvas el alfa siempre es 0 y el
+  // prado nunca queda cortado por una "pared"
+  float n = (snoise(vec3(v_uv * vec2(3.0, 2.0), u_tiempo * 0.02)) * 0.5 + 0.5) * u_ruidoBorde;
+  float mx = smoothstep(0.0, u_borde.x, v_uv.x - n) * smoothstep(0.0, u_borde.x, 1.0 - v_uv.x - n);
+  float my = smoothstep(0.0, u_borde.y, v_uv.y - n) * smoothstep(0.0, u_borde.y, 1.0 - v_uv.y - n);
   float alfa = mx * my;
 
   float g = (azar(gl_FragCoord.xy + fract(u_tiempo * 24.0) * 97.0) - 0.5) * u_grano;
