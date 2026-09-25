@@ -10,6 +10,8 @@ import hoja from "./shaders/hoja.glsl?raw";
 import pantallaVert from "./shaders/pantalla.vert?raw";
 import pastoFrag from "./shaders/pasto.frag?raw";
 import pastoVert from "./shaders/pasto.vert?raw";
+import polenFrag from "./shaders/polen.frag?raw";
+import polenVert from "./shaders/polen.vert?raw";
 import semillaFrag from "./shaders/semilla.frag?raw";
 import semillaVert from "./shaders/semilla.vert?raw";
 
@@ -19,6 +21,7 @@ export const FUENTES = {
   cielo: { vert: CABECERA + pantallaVert, frag: CABECERA + comun + cieloFrag },
   pasto: { vert: conHoja + pastoVert, frag: CABECERA + comun + pastoFrag },
   diente: { vert: conHoja + dienteVert, frag: CABECERA + comun + dienteFrag },
+  polen: { vert: CABECERA + polenVert, frag: CABECERA + polenFrag },
   dof: { vert: CABECERA + pantallaVert, frag: CABECERA + dofFrag },
   composicion: { vert: CABECERA + pantallaVert, frag: CABECERA + comun + composicionFrag },
   semilla: { vert: CABECERA + semillaVert, frag: CABECERA + semillaFrag },
