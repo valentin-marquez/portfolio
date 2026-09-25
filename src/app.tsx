@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { crearMotorSonido } from "./audio/ambiente";
 import { type Almacen, crearControlAudio } from "./audio/control";
-import { calcularProgreso, escena } from "./estado/escena";
+import { calcularProgreso, escena, vientoDelLatido } from "./estado/escena";
 import { pasoTiempo } from "./prado/motor";
-import { influenciaScroll, intensidad } from "./prado/viento";
+import { influenciaScroll } from "./prado/viento";
 import { CapaSemillas } from "./secciones/capa-semillas";
 import { Cierre } from "./secciones/cierre";
 import { Experimentos } from "./secciones/experimentos";
@@ -57,7 +57,7 @@ export function App() {
       anterior = ahora;
       influencia = influenciaScroll(influencia, escena.velocidad, dt);
       escena.velocidad *= Math.exp(-dt * 4);
-      escena.viento = intensidad(ahora / 1000, 0, influencia);
+      escena.viento = vientoDelLatido(ahora, influencia);
       audio.fijarViento(escena.viento);
       raf = requestAnimationFrame(latido);
     };

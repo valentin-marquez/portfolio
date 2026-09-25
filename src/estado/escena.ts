@@ -3,6 +3,7 @@
 import type { Prado } from "@/prado/motor";
 import { crearParametros } from "@/prado/parametros";
 import type { Punto } from "@/prado/semillas";
+import { intensidad } from "@/prado/viento";
 
 export const COLUMNA = 560;
 
@@ -19,6 +20,14 @@ export const escena = {
   elHero: null as HTMLElement | null,
   elCierre: null as HTMLElement | null,
 };
+
+/**
+ * Intensidad del viento para el latido (audio y semillas). Usa la misma línea de tiempo que
+ * rafagaDelPrado: un solo viento para el pasto, las flores, las semillas y el sonido.
+ */
+export function vientoDelLatido(ahoraMs: number, influencia: number): number {
+  return intensidad(ahoraMs / 1000, 0, influencia);
+}
 
 export function calcularProgreso(
   scrollY: number,
