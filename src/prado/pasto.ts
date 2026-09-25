@@ -78,7 +78,7 @@ export function instanciasTallos(dientes: Diente[]): Float32Array {
   const datos = new Float32Array(dientes.length * FLOTANTES_POR_HOJA);
   dientes.forEach((d, i) => {
     const o = i * FLOTANTES_POR_HOJA;
-    datos.set([d.x, d.z, d.altura, 0.006, 0.12, (i * 2.4) % (Math.PI * 2), 2, (i * 0.37) % 1], o);
+    datos.set([d.x, d.z, d.altura, 0.005, 0.12, (i * 2.4) % (Math.PI * 2), 2, (i * 0.37) % 1], o);
   });
   return datos;
 }

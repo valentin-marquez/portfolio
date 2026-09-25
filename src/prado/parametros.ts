@@ -51,7 +51,7 @@ export function crearParametros(): Parametros {
       tonoBase: { r: 0.2, g: 0.27, b: 0.13 },
       tonoCuerpo: { r: 0.46, g: 0.56, b: 0.33 },
       tonoPunta: { r: 0.64, g: 0.68, b: 0.42 },
-      tonoTallo: { r: 0.4, g: 0.47, b: 0.3 },
+      tonoTallo: { r: 0.47, g: 0.55, b: 0.34 },
       tonoSuelo: { r: 0.55, g: 0.6, b: 0.42 },
     },
     luz: {

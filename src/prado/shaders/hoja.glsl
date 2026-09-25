@@ -71,17 +71,25 @@ vec3 posicionHoja(vec4 raiz, vec4 forma, float v, float lado, out vec3 normal, o
   float temblor = sin(u_tiempo * 2.3 + forma.w * 6.2831) * 0.015 * v * v * altura;
   vec2 lateral = vec2(-dirFlexion.y, dirFlexion.x);
 
+  vec3 tangente = normalize(vec3(dirFlexion.x * sin(a), cos(a), dirFlexion.y * sin(a)));
+  vec3 centro = vec3(base.x, 0.0, base.y)
+              + vec3(dirFlexion.x, 0.0, dirFlexion.y) * horizontal
+              + vec3(lateral.x, 0.0, lateral.y) * temblor
+              + vec3(0.0, vertical, 0.0);
+
+  if (esTallo) {
+    // un tallo es un tubo: grosor parejo, sin torsión y siempre de frente a la cámara; la normal
+    // gira de un borde al otro para que la luz lo redondee
+    vec3 vista = normalize(u_camara - centro);
+    vec3 eje = normalize(cross(tangente, vista));
+    normal = normalize(vista * sqrt(max(0.0, 1.0 - lado * lado)) + eje * lado);
+    return centro + eje * raiz.w * (1.0 - 0.15 * v) * lado;
+  }
+
   float giro = orient + 1.5708 + u_torsion * (forma.w - 0.5) * v;
   vec2 ejeAncho = vec2(cos(giro), sin(giro));
   float grosor = raiz.w * pow(1.0 - v, 0.9);
-
-  vec3 p = vec3(base.x, 0.0, base.y)
-         + vec3(dirFlexion.x, 0.0, dirFlexion.y) * horizontal
-         + vec3(lateral.x, 0.0, lateral.y) * temblor
-         + vec3(0.0, vertical, 0.0)
-         + vec3(ejeAncho.x, 0.0, ejeAncho.y) * grosor * lado;
-
-  vec3 tangente = normalize(vec3(dirFlexion.x * sin(a), cos(a), dirFlexion.y * sin(a)));
+  vec3 p = centro + vec3(ejeAncho.x, 0.0, ejeAncho.y) * grosor * lado;
   normal = normalize(cross(tangente, vec3(ejeAncho.x, 0.0, ejeAncho.y)));
   return p;
 }
