@@ -1,3 +1,4 @@
+import { motion } from "motion/react";
 import { useEffect, useRef } from "react";
 import { destinosAterrizaje, escena } from "@/estado/escena";
 import { montarCapaSemillas } from "@/prado/capa-semillas";
@@ -38,12 +39,16 @@ export function CapaSemillas() {
     return () => capa?.destruir();
   }, []);
 
+  // las semillas llegan después del prado: al cargar, nada flota sobre la página vacía
   return (
-    <canvas
+    <motion.canvas
       ref={ref}
       aria-hidden="true"
       tabIndex={-1}
       className="pointer-events-none fixed inset-0 z-20 block h-full w-full"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 1.4, duration: 1.2, ease: "easeOut" }}
     />
   );
 }
