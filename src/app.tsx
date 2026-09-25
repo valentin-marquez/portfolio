@@ -5,6 +5,7 @@ import { cargarClimaDelVisitante } from "./clima/clima";
 import { calcularProgreso, escena, vientoDelLatido } from "./estado/escena";
 import { pasoTiempo, rafagaDelPrado } from "./prado/motor";
 import { fijarClima, influenciaScroll } from "./prado/viento";
+import { BordeDifuso } from "./secciones/borde-difuso";
 import { CapaSemillas } from "./secciones/capa-semillas";
 import { Cierre } from "./secciones/cierre";
 import { Experimentos } from "./secciones/experimentos";
@@ -123,13 +124,17 @@ export function App() {
       ) : variante === "2" ? (
         <VarianteDos />
       ) : (
-        <main className="relative z-10">
-          <Hero />
-          <Intro />
-          <Experimentos />
-          <SobreMi />
-          <Cierre />
-        </main>
+        <>
+          <main className="relative z-10">
+            <Hero />
+            <Intro />
+            <Experimentos />
+            <SobreMi />
+            <Cierre />
+          </main>
+          <BordeDifuso lado="arriba" />
+          <BordeDifuso lado="abajo" />
+        </>
       )}
     </>
   );
