@@ -7,7 +7,13 @@ import type { Parametros } from "@/prado/parametros";
 const COLOR = { color: { type: "float" as const } };
 
 export function abrirDepuracion(p: Parametros): () => void {
-  const panel = new Pane({ title: "prado", expanded: true });
+  // contenedor propio: fijo y por encima de la página (el de tweakpane es absoluto y quedaba
+  // tapado por <main>: se veía pero no se podía tocar)
+  const contenedor = document.createElement("div");
+  contenedor.style.cssText =
+    "position:fixed;top:12px;right:12px;z-index:60;width:280px;max-height:calc(100vh - 24px);overflow-y:auto";
+  document.body.appendChild(contenedor);
+  const panel = new Pane({ title: "prado", expanded: true, container: contenedor });
   panel.addBinding(p, "vista", { options: { final: 0, profundidad: 1, foco: 2, viento: 3 } });
 
   const camara = panel.addFolder({ title: "cámara", expanded: false });
@@ -80,5 +86,6 @@ export function abrirDepuracion(p: Parametros): () => void {
     cancelAnimationFrame(raf);
     fps.remove();
     panel.dispose();
+    contenedor.remove();
   };
 }
