@@ -1,0 +1,20 @@
+// Arma la fuente completa de cada programa: cabecera + bibliotecas compartidas + etapa.
+import { CABECERA } from "./gl/programa";
+import cieloFrag from "./shaders/cielo.frag?raw";
+import composicionFrag from "./shaders/composicion.frag?raw";
+import comun from "./shaders/comun.glsl?raw";
+import dienteFrag from "./shaders/diente.frag?raw";
+import dienteVert from "./shaders/diente.vert?raw";
+import hoja from "./shaders/hoja.glsl?raw";
+import pantallaVert from "./shaders/pantalla.vert?raw";
+import pastoFrag from "./shaders/pasto.frag?raw";
+import pastoVert from "./shaders/pasto.vert?raw";
+
+const conHoja = CABECERA + comun + hoja;
+
+export const FUENTES = {
+  cielo: { vert: CABECERA + pantallaVert, frag: CABECERA + comun + cieloFrag },
+  pasto: { vert: conHoja + pastoVert, frag: CABECERA + comun + pastoFrag },
+  diente: { vert: conHoja + dienteVert, frag: CABECERA + comun + dienteFrag },
+  composicion: { vert: CABECERA + pantallaVert, frag: CABECERA + comun + composicionFrag },
+} satisfies Record<string, { vert: string; frag: string }>;

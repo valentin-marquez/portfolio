@@ -34,26 +34,26 @@ export interface Parametros {
 
 export function crearParametros(): Parametros {
   return {
-    camara: { altura: 1.6, mirarY: 0.9, mirarZ: -12, fov: 30 },
+    camara: { altura: 1.6, mirarY: 0.3, mirarZ: -12, fov: 30 },
     pasto: {
       alturaMin: 0.28,
       alturaMax: 0.7,
-      ancho: 0.018,
+      ancho: 0.026,
       curva: 0.35,
       torsion: 1.2,
       zCerca: 2.5,
-      zLejos: 45,
+      zLejos: 70,
       tonoBase: { r: 0.2, g: 0.27, b: 0.13 },
       tonoCuerpo: { r: 0.46, g: 0.56, b: 0.33 },
-      tonoPunta: { r: 0.78, g: 0.8, b: 0.52 },
+      tonoPunta: { r: 0.64, g: 0.68, b: 0.42 },
       tonoTallo: { r: 0.4, g: 0.47, b: 0.3 },
       tonoSuelo: { r: 0.55, g: 0.6, b: 0.42 },
     },
     luz: {
       sol: { x: 0.35, y: 0.25, z: -1 },
       colorSol: { r: 1, g: 0.93, b: 0.78 },
-      ambiente: { r: 0.62, g: 0.66, b: 0.55 },
-      translucidez: 0.9,
+      ambiente: { r: 0.5, g: 0.54, b: 0.45 },
+      translucidez: 0.35,
     },
     viento: { escalaRuido: 0.18, fuerzaRuido: 0.22, fuerzaRafaga: 0.3 },
     foco: { distancia: 8, rango: 9, radioMax: 9, respiracion: 0.35 },
