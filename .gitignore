@@ -2,8 +2,7 @@
 node_modules/
 dist/
 
-# artefactos de utillaje de sesión
+# documentos y artefactos de IA: viven solo en local, nunca van al remote
+docs/superpowers/
+.superpowers/
 .playwright-mcp/
-
-# capturas de sesión
-shots/
