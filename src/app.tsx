@@ -63,7 +63,20 @@ export function App() {
     };
     raf = requestAnimationFrame(latido);
 
+    // panel de depuración: solo en desarrollo y con ?debug; en producción este bloque desaparece
+    let vivo = true;
+    let cerrarDepuracion: (() => void) | undefined;
+    if (import.meta.env.DEV && new URLSearchParams(window.location.search).has("debug")) {
+      void import("./depuracion/panel").then(({ abrirDepuracion }) => {
+        const cerrar = abrirDepuracion(escena.parametros);
+        if (vivo) cerrarDepuracion = cerrar;
+        else cerrar();
+      });
+    }
+
     return () => {
+      vivo = false;
+      cerrarDepuracion?.();
       window.removeEventListener("scroll", alScroll);
       cancelAnimationFrame(raf);
       audio.destruir();
