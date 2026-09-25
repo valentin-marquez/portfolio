@@ -46,6 +46,8 @@ void main() {
   float difusa = max(dot(N, L), 0.0) * 0.6 + 0.4;  // luz envolvente: la hoja es fina
   float trans = pow(max(dot(-V, L), 0.0), 3.0) * u_translucidez * smoothstep(0.2, 1.0, v_v);
   vec3 color = base * (u_ambiente + luzSol * difusa * 0.55) * ao + luzSol * base * trans;
+  // donde pasa la ráfaga las puntas dobladas agarran la luz: así se ve el viento sobre un pastizal
+  color += luzSol * base * smoothstep(0.12, 0.55, v_viento) * v_v * v_v * 0.4;
   color = mix(color, u_bruma, 1.0 - exp(-v_prof * u_densidadBruma));
 
   if (u_vista == 3) color = vec3(clamp(0.5 + v_viento, 0.0, 1.0));

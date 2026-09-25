@@ -13,15 +13,19 @@ uniform float u_torsion;
 
 float empujeViento(vec2 raiz) {
   float t = u_tiempo;
-  float ruido = snoise(vec3(raiz * u_viento.x, t * 0.12)) * 0.65
-              + snoise(vec3(raiz * u_viento.x * 3.1, t * 0.35)) * 0.25;
-  vec4 clip = u_vistaProy * vec4(raiz.x, 0.0, raiz.y, 1.0);
-  float xPantalla = clip.x / clip.w * 0.5 + 0.5;
-  // la ráfaga cruza la pantalla de izquierda a derecha como una ola (x*x: pow es indefinido con base negativa)
-  float dx = (xPantalla - u_rafaga.y) / 0.2;
+  vec2 dir = normalize(vec2(1.0, -0.25));
+  // la brisa viaja con el viento: parches que recorren el prado, no ruido que hierve en su lugar
+  vec2 arrastre = raiz - dir * t * 1.8;
+  float brisa = snoise(vec3(arrastre * u_viento.x, t * 0.04)) * 0.7
+              + snoise(vec3(arrastre * u_viento.x * 2.7, t * 0.09)) * 0.3;
+  // la ráfaga es un frente que avanza por el prado (en el espacio, con parallax): cruza rápido el
+  // pasto cercano y despacio el lejano, y llega en diagonal
+  float s = dot(raiz, dir);
+  float frente = mix(-28.0, 28.0, (u_rafaga.y + 0.3) / 1.6);
+  float dx = (s - frente) / 6.0;
   float ola = exp(-dx * dx) * u_rafaga.x;
-  return (ruido * u_viento.y + ola * (u_viento.z + u_extra)) * u_movimiento
-       + 0.04 * sin(t * 0.35 - raiz.x * 0.4);
+  return (brisa * u_viento.y + ola * (u_viento.z + u_extra)) * u_movimiento
+       + 0.03 * sin(t * 0.35 - raiz.x * 0.4);
 }
 
 // Como pasar la mano por el pasto: cada muestra de la estela inclina las hojas cercanas en la
