@@ -21,6 +21,13 @@ export interface Punto {
   y: number;
 }
 
+export interface Rect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 export interface Entorno {
   progreso: number;
   tiempo: number;
@@ -35,6 +42,10 @@ export interface Entorno {
   origenes: Punto[];
   /** puntos de aterrizaje en el prado del cierre, px de viewport */
   destinos: Punto[];
+  /** la ventana del prado del cierre, px de viewport: ahí las semillas pueden verse sobre la columna */
+  zonaAterrizaje: Rect | null;
+  /** prefers-reduced-motion: las semillas no viajan ni se mecen, solo cambia su opacidad */
+  reducir: boolean;
 }
 
 export const DESPEGUE = 0.02;
@@ -43,6 +54,8 @@ const HOLGURA = 24;
 const BORDE = 16;
 const ZONA_MINIMA = 48;
 const ALFA_VUELO = 0.55;
+const FUNDIDO = 1.5;
+const FUNDIDO_RAPIDO = 14;
 
 export function faseSegun(progreso: number): Fase {
   if (progreso < DESPEGUE) return "reposo";
@@ -79,6 +92,9 @@ export function crearSemillas(n: number, semilla: number): Semilla[] {
 const seguir = (actual: number, objetivo: number, tasa: number, dt: number) =>
   actual + (objetivo - actual) * (1 - Math.exp(-dt * tasa));
 
+const dentroDe = (r: Rect | null, x: number, y: number) =>
+  !!r && x >= r.left && x <= r.left + r.width && y >= r.top && y <= r.top + r.height;
+
 export function actualizarSemillas(semillas: Semilla[], e: Entorno): void {
   const fase = faseSegun(e.progreso);
   const zonas = zonasLaterales(e.ancho, e.columna);
@@ -91,8 +107,9 @@ export function actualizarSemillas(semillas: Semilla[], e: Entorno): void {
       s.x = origen.x;
       s.y = origen.y;
     }
+    const faseAnterior = s.fase;
     s.fase = fase;
-    const deriva = Math.sin(e.tiempo * 0.25 + s.fasePropia);
+    const deriva = e.reducir ? 0 : Math.sin(e.tiempo * 0.25 + s.fasePropia);
     let tx = origen.x;
     let ty = origen.y;
     let alfaObjetivo = 0;
@@ -104,7 +121,8 @@ export function actualizarSemillas(semillas: Semilla[], e: Entorno): void {
         tx = zona[0] + (zona[1] - zona[0]) * s.carril + deriva * 14;
         tx = Math.min(zona[1], Math.max(zona[0], tx));
         const altura = (s.indice + 0.5) / 10;
-        ty = e.alto * (0.12 + 0.76 * altura) + Math.cos(e.tiempo * 0.2 + s.fasePropia) * 20;
+        const vaiven = e.reducir ? 0 : Math.cos(e.tiempo * 0.2 + s.fasePropia) * 20;
+        ty = e.alto * (0.12 + 0.76 * altura) + vaiven;
         alfaObjetivo = ALFA_VUELO * (1 - s.desenfoque * 0.5);
       } else {
         tx = s.x;
@@ -122,13 +140,26 @@ export function actualizarSemillas(semillas: Semilla[], e: Entorno): void {
       tasa = 0.8;
     }
 
-    s.x = seguir(s.x, tx, tasa, e.dt);
-    s.y = seguir(s.y, ty, tasa, e.dt);
+    if (e.reducir) {
+      // sin viaje: la semilla aparece en su lugar; al cambiar de fase parte invisible y se funde
+      if (faseAnterior !== fase) s.alfa = 0;
+      s.x = tx;
+      s.y = ty;
+    } else {
+      s.x = seguir(s.x, tx, tasa, e.dt);
+      s.y = seguir(s.y, ty, tasa, e.dt);
+    }
 
-    // si en vuelo la semilla aún cruza la columna de texto, se mantiene oculta hasta salir de ella
-    const detras = fase === "vuelo" && Math.abs(s.x - e.ancho / 2) < e.columna / 2 + HOLGURA;
-    if (detras) alfaObjetivo = 0;
-    s.alfa = detras ? 0 : seguir(s.alfa, alfaObjetivo, 1.5, e.dt);
+    // sobre la columna de texto solo puede verse dentro del prado del cierre; si no, se apaga rápido
+    const sobreTexto =
+      Math.abs(s.x - e.ancho / 2) < e.columna / 2 + HOLGURA &&
+      !dentroDe(e.zonaAterrizaje, s.x, s.y);
+    s.alfa = seguir(
+      s.alfa,
+      sobreTexto ? 0 : alfaObjetivo,
+      sobreTexto ? FUNDIDO_RAPIDO : FUNDIDO,
+      e.dt,
+    );
   }
 }
 
@@ -136,16 +167,18 @@ export function actualizarSemillas(semillas: Semilla[], e: Entorno): void {
 export function semillaCercana(
   tiempo: number,
   progreso: number,
-): { activa: boolean; x: number; y: number } {
+): { activa: boolean; x: number; y: number; alfa: number } {
   const periodo = 8;
   const k = (tiempo % periodo) / periodo;
   const cruce = 0.6; // fracción del periodo que dura el cruce
-  if (progreso >= 0.1 || k > cruce) return { activa: false, x: 0, y: 0 };
+  if (progreso >= 0.1 || k > cruce) return { activa: false, x: 0, y: 0, alfa: 0 };
   const u = k / cruce;
   const ciclo = Math.floor(tiempo / periodo);
   return {
     activa: true,
     x: -0.1 + u * 1.2,
     y: 0.3 + 0.3 * Math.sin(ciclo * 1.7) + Math.sin(u * 6) * 0.04,
+    // entra y sale fundiéndose: nunca aparece de golpe en el borde del hero
+    alfa: 0.35 * Math.sin(Math.PI * u),
   };
 }

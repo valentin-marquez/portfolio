@@ -7,6 +7,7 @@ import {
   actualizarSemillas,
   crearSemillas,
   type Punto,
+  type Rect,
   type Semilla,
   semillaCercana,
 } from "./semillas";
@@ -14,7 +15,19 @@ import {
 export const FLOTANTES_POR_SEMILLA = 6; // x, y, tamaño, alfa, desenfoque, giro
 const CANTIDAD = 8;
 
-type Rect = { left: number; top: number; width: number; height: number };
+/** Sin MSAA: la capa cubre toda la pantalla y sus sprites ya se suavizan en el shader. */
+export const ATRIBUTOS_CAPA: WebGLContextAttributes = {
+  alpha: true,
+  premultipliedAlpha: true,
+  antialias: false,
+  depth: false,
+  stencil: false,
+};
+
+/** Solo se limpia y presenta la pantalla si hay semillas ahora o las hubo en el cuadro anterior. */
+export function hayQueDibujar(anteriores: number, actuales: number): boolean {
+  return anteriores > 0 || actuales > 0;
+}
 
 export interface FuenteCapa {
   progreso(): number;
@@ -22,13 +35,15 @@ export interface FuenteCapa {
   origenes(): Punto[];
   destinos(): Punto[];
   rectHero(): Rect | null;
+  /** la ventana del prado del cierre, donde aterrizan */
+  zonaAterrizaje(): Rect | null;
   columna: number;
   reducirMovimiento: boolean;
 }
 
 export function instanciasSemillas(
   semillas: Semilla[],
-  cercana: { activa: boolean; x: number; y: number },
+  cercana: { activa: boolean; x: number; y: number; alfa: number },
   rectHero: Rect | null,
   tiempo: number,
   reducir: boolean,
@@ -37,14 +52,15 @@ export function instanciasSemillas(
   for (const s of semillas) {
     if (s.alfa <= 0.003) continue;
     if (reducir && s.fase === "vuelo") continue;
-    datos.push(s.x, s.y, s.tam, s.alfa, s.desenfoque, Math.sin(tiempo * 0.7 + s.fasePropia) * 0.25);
+    const giro = reducir ? 0 : Math.sin(tiempo * 0.7 + s.fasePropia) * 0.25;
+    datos.push(s.x, s.y, s.tam, s.alfa, s.desenfoque, giro);
   }
   if (cercana.activa && rectHero && !reducir) {
     datos.push(
       rectHero.left + cercana.x * rectHero.width,
       rectHero.top + cercana.y * rectHero.height,
       46,
-      0.35,
+      cercana.alfa,
       1,
       Math.sin(tiempo * 0.5) * 0.3,
     );
@@ -103,18 +119,14 @@ export function montarCapaSemillas(
   canvas: HTMLCanvasElement,
   fuente: FuenteCapa,
 ): { destruir(): void } | null {
-  const contexto = canvas.getContext("webgl2", {
-    alpha: true,
-    premultipliedAlpha: true,
-    antialias: true,
-    depth: false,
-  });
+  const contexto = canvas.getContext("webgl2", ATRIBUTOS_CAPA);
   if (!contexto) return null;
   const gl = contexto;
   let recursos: ReturnType<typeof crearRecursos> | null = crearRecursos(gl);
   const semillas = crearSemillas(CANTIDAD, 11);
   let raf = 0;
   let anterior: number | null = null;
+  let dibujadasAntes = 0;
 
   function cuadro(ahora: number) {
     raf = requestAnimationFrame(cuadro);
@@ -136,6 +148,8 @@ export function montarCapaSemillas(
       columna: fuente.columna,
       origenes: fuente.origenes(),
       destinos: fuente.destinos(),
+      zonaAterrizaje: fuente.zonaAterrizaje(),
+      reducir: fuente.reducirMovimiento,
     });
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const ancho = Math.round(anchoCss * dpr);
@@ -152,7 +166,9 @@ export function montarCapaSemillas(
       tiempo,
       fuente.reducirMovimiento,
     );
-    recursos.dibujar(datos, anchoCss, altoCss);
+    const cantidad = datos.length / FLOTANTES_POR_SEMILLA;
+    if (hayQueDibujar(dibujadasAntes, cantidad)) recursos.dibujar(datos, anchoCss, altoCss);
+    dibujadasAntes = cantidad;
   }
   raf = requestAnimationFrame(cuadro);
 

@@ -29,6 +29,8 @@ function entorno(progreso: number, extra: Partial<Entorno> = {}): Entorno {
       { x: 600, y: 700 },
       { x: 800, y: 720 },
     ],
+    zonaAterrizaje: { left: 220, top: 600, width: 1000, height: 200 },
+    reducir: false,
     ...extra,
   };
 }
@@ -114,7 +116,69 @@ describe("actualizarSemillas", () => {
   });
 });
 
+describe("actualizarSemillas en móvil y con movimiento reducido", () => {
+  it("en móvil, al aterrizar, no pasan visibles sobre el texto antes de entrar al prado del cierre", () => {
+    const cierre = { left: 16, top: 900, width: 358, height: 380 }; // bajo el pliegue: alto 844
+    const destinos = [
+      { x: 120, y: 1150 },
+      { x: 260, y: 1160 },
+    ];
+    // en móvil los orígenes (cabezas de los dientes de león del hero) caen dentro de los 390 px
+    const origenes = [
+      { x: 110, y: 300 },
+      { x: 200, y: 280 },
+      { x: 290, y: 310 },
+    ];
+    const movil = { ancho: 390, alto: 844, origenes };
+    const s = crearSemillas(8, 1);
+    simular(s, 0.5, 5, { ...movil, destinos, zonaAterrizaje: cierre });
+    for (let i = 0; i < 600; i++) {
+      // el visitante sigue bajando: el prado del cierre sube hacia la vista
+      const z = { ...cierre, top: cierre.top - i * 0.8 };
+      const d = destinos.map((p) => ({ x: p.x, y: p.y - i * 0.8 }));
+      actualizarSemillas(
+        s,
+        entorno(0.9, { ...movil, zonaAterrizaje: z, destinos: d, tiempo: i / 60 }),
+      );
+      for (const x of s) {
+        const dentro =
+          x.x >= z.left && x.x <= z.left + z.width && x.y >= z.top && x.y <= z.top + z.height;
+        if (!dentro) expect(x.alfa).toBeLessThan(0.02);
+      }
+    }
+  });
+
+  it("con movimiento reducido no viajan: quedan quietas en su destino y solo cambia la opacidad", () => {
+    const s = crearSemillas(8, 1);
+    simular(s, 0.5, 5, { reducir: true });
+    actualizarSemillas(s, entorno(1, { reducir: true, tiempo: 5 }));
+    const destinos = [
+      { x: 600, y: 700 },
+      { x: 800, y: 720 },
+    ];
+    for (const x of s) {
+      const d = destinos[x.indice % 2] as { x: number; y: number };
+      expect(x.x).toBe(d.x);
+      expect(x.y).toBe(d.y);
+    }
+    const antes = s.map((x) => ({ x: x.x, y: x.y, alfa: x.alfa }));
+    simular(s, 1, 2, { reducir: true });
+    s.forEach((x, i) => {
+      const a = antes[i] as { x: number; y: number; alfa: number };
+      expect(x.x).toBe(a.x);
+      expect(x.y).toBe(a.y);
+      expect(x.alfa).toBeGreaterThan(a.alfa);
+    });
+  });
+});
+
 describe("semillaCercana", () => {
+  it("entra y sale con un fundido, sin aparecer de golpe", () => {
+    expect(semillaCercana(0.001, 0.03).alfa).toBeLessThan(0.02);
+    expect(semillaCercana(2.4, 0.03).alfa).toBeGreaterThan(0.3);
+    expect(semillaCercana(4.79, 0.03).alfa).toBeLessThan(0.02);
+  });
+
   it("solo cruza mientras el hero está a la vista", () => {
     let alguna = false;
     for (let t = 0; t < 30; t += 0.1) if (semillaCercana(t, 0.03).activa) alguna = true;
