@@ -120,15 +120,20 @@ export function proyectar(m: Mat4, p: Vec3): { x: number; y: number; w: number }
   return { x: c.x / c.w, y: c.y / c.w, w: c.w };
 }
 
-/** Intersección del rayo que pasa por (ndcX, ndcY) con el plano y = 0; null si no lo toca. */
-export function rayoASuelo(inversa: Mat4, ndcX: number, ndcY: number): Vec3 | null {
+/** Intersección del rayo que pasa por (ndcX, ndcY) con el plano horizontal y = altura; null si no lo toca. */
+export function rayoAPlano(inversa: Mat4, ndcX: number, ndcY: number, altura: number): Vec3 | null {
   const a = transformar(inversa, ndcX, ndcY, -1, 1);
   const b = transformar(inversa, ndcX, ndcY, 1, 1);
   const p0 = { x: a.x / a.w, y: a.y / a.w, z: a.z / a.w };
   const p1 = { x: b.x / b.w, y: b.y / b.w, z: b.z / b.w };
   const dy = p1.y - p0.y;
   if (Math.abs(dy) < 1e-9) return null;
-  const t = -p0.y / dy;
+  const t = (altura - p0.y) / dy;
   if (t < 0 || t > 1) return null;
-  return { x: p0.x + (p1.x - p0.x) * t, y: 0, z: p0.z + (p1.z - p0.z) * t };
+  return { x: p0.x + (p1.x - p0.x) * t, y: altura, z: p0.z + (p1.z - p0.z) * t };
+}
+
+/** Intersección del rayo que pasa por (ndcX, ndcY) con el suelo (y = 0); null si no lo toca. */
+export function rayoASuelo(inversa: Mat4, ndcX: number, ndcY: number): Vec3 | null {
+  return rayoAPlano(inversa, ndcX, ndcY, 0);
 }

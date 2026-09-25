@@ -9,7 +9,7 @@ import {
   multiplicar,
   perspectiva,
   proyectar,
-  rayoASuelo,
+  rayoAPlano,
   type Vec3,
 } from "./camara";
 import { FUENTES } from "./fuentes";
@@ -25,6 +25,7 @@ import {
   instanciasTallos,
   mallaHoja,
 } from "./pasto";
+import { actualizarRastro, crearRastro, uniformeRastro } from "./rastro";
 import { influenciaScroll, type Rafaga, rafaga } from "./viento";
 
 export interface OpcionesPrado {
@@ -79,9 +80,8 @@ const NOMBRES_HOJA = [
   "u_viento",
   "u_movimiento",
   "u_torsion",
+  "u_rastro",
 ] as const;
-
-const RADIO_PUNTERO = 0.9;
 
 interface EstadoCuadro {
   vp: Mat4;
@@ -91,6 +91,7 @@ interface EstadoCuadro {
   rafaga: Rafaga;
   extra: number;
   puntero: [number, number, number, number];
+  rastro: Float32Array;
   movimiento: number;
   ancho: number;
   alto: number;
@@ -233,6 +234,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     gl.uniform2f(u.u_rafaga, e.rafaga.fuerza, e.rafaga.frente);
     gl.uniform1f(u.u_extra, e.extra);
     gl.uniform4f(u.u_puntero, ...e.puntero);
+    gl.uniform4fv(u.u_rastro, e.rastro);
     gl.uniform3f(u.u_viento, p.viento.escalaRuido, p.viento.fuerzaRuido, p.viento.fuerzaRafaga);
     gl.uniform1f(u.u_movimiento, e.movimiento);
     gl.uniform1f(u.u_torsion, p.pasto.torsion);
@@ -389,7 +391,8 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
   let extra = 0;
   let velocidad = 0;
   let puntero: { x: number; y: number } | null = null;
-  let suelo = { x: 0, z: 0 };
+  let bajoCursor = { x: 0, z: 0 };
+  const rastro = crearRastro();
   let fuerzaPuntero = 0;
   let ultimaVp: Mat4 | null = null;
 
@@ -429,15 +432,26 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
       const inversa = invertir(vp) ?? vp;
       ultimaVp = vp;
 
+      // el cursor toca el pasto a la altura de las puntas, que es lo que se ve bajo él
+      let tocado: { x: number; z: number } | null = null;
       if (puntero) {
-        const hit = rayoASuelo(
+        const alturaPuntas = (p.pasto.alturaMin + p.pasto.alturaMax) * 0.4;
+        const hit = rayoAPlano(
           inversa,
           (puntero.x / Math.max(1, canvas.clientWidth)) * 2 - 1,
           1 - (puntero.y / Math.max(1, canvas.clientHeight)) * 2,
+          alturaPuntas,
         );
-        if (hit) suelo = { x: hit.x, z: hit.z };
+        if (hit) {
+          tocado = { x: hit.x, z: hit.z };
+          bajoCursor = tocado;
+        }
       }
-      fuerzaPuntero += ((puntero ? 1 : 0) - fuerzaPuntero) * (1 - Math.exp(-dt * 3));
+      actualizarRastro(rastro, tocado, dt);
+      // entra rápido y vuelve despacio, como el pasto real
+      const tasaPuntero = tocado ? 3 : 1.2;
+      fuerzaPuntero += ((tocado ? 1 : 0) - fuerzaPuntero) * (1 - Math.exp(-dt * tasaPuntero));
+      const radioQuieto = 0.35 + 0.035 * Math.hypot(bajoCursor.x, bajoCursor.z);
 
       recursos.dibujar({
         vp,
@@ -446,12 +460,8 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
         tiempo,
         rafaga: rafagaDelPrado(ahora),
         extra,
-        puntero: [
-          suelo.x,
-          suelo.z,
-          RADIO_PUNTERO,
-          fuerzaPuntero * (op.reducirMovimiento ? 0.3 : 1),
-        ],
+        puntero: [bajoCursor.x, bajoCursor.z, radioQuieto, fuerzaPuntero],
+        rastro: uniformeRastro(rastro),
         movimiento,
         ancho,
         alto,

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { invertir, mirarA, multiplicar, perspectiva, proyectar, rayoASuelo } from "./camara";
+import {
+  invertir,
+  mirarA,
+  multiplicar,
+  perspectiva,
+  proyectar,
+  rayoAPlano,
+  rayoASuelo,
+} from "./camara";
 
 const ojo = { x: 0, y: 1.6, z: 0 };
 const objetivo = { x: 0, y: 0.9, z: -12 };
@@ -31,5 +39,14 @@ describe("cámara", () => {
 
   it("un rayo hacia el cielo no toca el suelo", () => {
     expect(rayoASuelo(invertir(vp) as Float32Array, 0, 0.99)).toBeNull();
+  });
+
+  it("el rayo también encuentra un plano a la altura de las puntas del pasto", () => {
+    const punta = { x: -0.8, y: 0.4, z: -6 };
+    const p = proyectar(vp, punta);
+    const hit = rayoAPlano(invertir(vp) as Float32Array, p.x, p.y, 0.4);
+    expect(hit?.x).toBeCloseTo(-0.8, 3);
+    expect(hit?.y).toBeCloseTo(0.4, 5);
+    expect(hit?.z).toBeCloseTo(-6, 3);
   });
 });
