@@ -70,6 +70,11 @@ export function cambiarClima(r: RelojViento, t: number, clima: Clima): void {
 /** El reloj que comparten el pasto, las flores, las semillas y el audio. */
 export const relojCompartido = crearReloj();
 
+/** Hacia dónde sopla ahora el viento en pantalla: 1 a la derecha, -1 a la izquierda. */
+export function sentidoActual(): 1 | -1 {
+  return relojCompartido.clima.sentido;
+}
+
 /** Aplica el viento real del visitante al reloj compartido, en el instante t (segundos). */
 export function fijarClima(clima: Clima, t: number): void {
   cambiarClima(relojCompartido, t, clima);

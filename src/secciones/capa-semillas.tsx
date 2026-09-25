@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { useEffect, useRef } from "react";
 import { destinosAterrizaje, destinosJuntoALaFlor, escena } from "@/estado/escena";
 import { montarCapaSemillas } from "@/prado/capa-semillas";
+import { sentidoActual } from "@/prado/viento";
 
 const CANTIDAD_DESTINOS = 8;
 
@@ -12,7 +13,7 @@ export function CapaSemillas() {
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
-    let capa: { destruir(): void } | null = null;
+    let capa: ReturnType<typeof montarCapaSemillas> = null;
     try {
       capa = montarCapaSemillas(canvas, {
         progreso: () => escena.progreso,
@@ -35,11 +36,19 @@ export function CapaSemillas() {
           return escena.columna;
         },
         reducirMovimiento: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+        sentido: sentidoActual,
       });
     } catch (error) {
       console.error(error);
     }
-    return () => capa?.destruir();
+    // al soplar una flor, sus semillas salen volando desde la cabeza
+    const alSoplar = (cabeza: { x: number; y: number; radio: number }) =>
+      capa?.soltar(cabeza, cabeza.radio);
+    escena.alSoplar.push(alSoplar);
+    return () => {
+      escena.alSoplar = escena.alSoplar.filter((f) => f !== alSoplar);
+      capa?.destruir();
+    };
   }, []);
 
   // las semillas llegan después del prado: al cargar, nada flota sobre la página vacía

@@ -12,6 +12,8 @@ export interface EstadoGlFalso {
 export interface GlFalso {
   gl: WebGL2RenderingContext;
   llamadas: Map<string, number>;
+  /** los argumentos de la última llamada a cada método */
+  ultimos: Map<string, unknown[]>;
   estado: EstadoGlFalso;
   /** lo que hace el navegador al perder el contexto: las extensiones habilitadas se pierden */
   olvidarExtensiones(): void;
@@ -19,6 +21,7 @@ export interface GlFalso {
 
 export function crearGlFalso(): GlFalso {
   const llamadas = new Map<string, number>();
+  const ultimos = new Map<string, unknown[]>();
   const estado: EstadoGlFalso = {
     completo: true,
     perdido: false,
@@ -60,6 +63,7 @@ export function crearGlFalso(): GlFalso {
         if (/^[A-Z0-9_]+$/.test(propiedad)) return constante(propiedad);
         return (...args: unknown[]) => {
           llamadas.set(propiedad, (llamadas.get(propiedad) ?? 0) + 1);
+          ultimos.set(propiedad, args);
           const especial = especiales[propiedad];
           return especial ? especial(...args) : {};
         };
@@ -70,6 +74,7 @@ export function crearGlFalso(): GlFalso {
   return {
     gl,
     llamadas,
+    ultimos,
     estado,
     olvidarExtensiones() {
       estado.pedidas.clear();

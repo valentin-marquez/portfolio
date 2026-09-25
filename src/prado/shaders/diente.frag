@@ -4,6 +4,7 @@
 in vec2 v_q;
 in float v_prof;
 in float v_pixeles;
+in float v_deshecho;
 
 uniform vec3 u_colorSol;
 uniform vec3 u_bruma;
@@ -25,10 +26,12 @@ void main() {
   float fil = abs(fract(giro) - 0.5);
   // de cerca las hebras se afinan: en proporción al tamaño, no al ángulo
   float ancho = mix(0.2, 0.07, clamp(v_pixeles / 70.0, 0.0, 1.0));
-  float hebra = smoothstep(ancho, 0.0, fil) * smoothstep(largo + 0.02, largo - 0.12, r) * smoothstep(0.07, 0.2, r);
+  // al soplarla, cada semilla se va en su momento: las que tienen azar menor que lo deshecho ya no están
+  float queda = step(v_deshecho, azar(indice + 9.1) * 0.98 + 0.01);
+  float hebra = smoothstep(ancho, 0.0, fil) * smoothstep(largo + 0.02, largo - 0.12, r) * smoothstep(0.07, 0.2, r) * queda;
   float angPunta = (indice + 0.5) / n * 6.2831853;
   vec2 punta = vec2(cos(angPunta), sin(angPunta)) * largo;
-  float paraguas = smoothstep(0.08 + 0.05 * azar(indice + 3.1), 0.0, length(v_q - punta));
+  float paraguas = smoothstep(0.08 + 0.05 * azar(indice + 3.1), 0.0, length(v_q - punta)) * queda;
   // la cabeza es una esfera: muchas semillas apuntan hacia la cámara y sus paraguas llenan el disco,
   // repartidos en capas por dentro; solo se distinguen cuando la cabeza se ve grande
   float interior = 0.0;
@@ -39,12 +42,14 @@ void main() {
     float ik = floor(gk);
     float ak = (ik + 0.5 + (azar(ik + float(k) * 13.0) - 0.5) * 0.7) / nk * 6.2831853 - azar(float(k) * 7.3) / nk * 6.2831853;
     float rk = capa + (azar(ik * 3.7 + float(k)) - 0.5) * 0.14;
-    interior = max(interior, smoothstep(0.075, 0.0, length(v_q - vec2(cos(ak), sin(ak)) * rk)));
+    float quedaK = step(v_deshecho, azar(ik * 5.3 + float(k)) * 0.98 + 0.01);
+    interior = max(interior, smoothstep(0.075, 0.0, length(v_q - vec2(cos(ak), sin(ak)) * rk)) * quedaK);
   }
   interior *= smoothstep(18.0, 45.0, v_pixeles) * 0.75;
   // volumen translúcido, más luminoso hacia el borde (contraluz)
-  float volumen = smoothstep(1.0, 0.45, r) * 0.34 + smoothstep(0.5, 0.88, r) * smoothstep(1.0, 0.88, r) * 0.26;
-  float centro = smoothstep(0.1, 0.06, r);
+  float volumen = (smoothstep(1.0, 0.45, r) * 0.34 + smoothstep(0.5, 0.88, r) * smoothstep(1.0, 0.88, r) * 0.26) * (1.0 - v_deshecho);
+  // pelada queda el receptáculo: un botón pardo algo más grande
+  float centro = smoothstep(0.1 + 0.05 * v_deshecho, 0.06 + 0.04 * v_deshecho, r);
   float alfa = clamp(max(max(hebra * 0.6, paraguas * 0.9), max(max(volumen, interior), centro)), 0.0, 1.0);
   if (alfa < 0.02) discard;
   vec3 blanco = vec3(0.98, 0.97, 0.93) + u_colorSol * 0.12 * smoothstep(0.4, 0.95, r);

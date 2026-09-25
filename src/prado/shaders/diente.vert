@@ -6,10 +6,12 @@ layout(location = 2) in vec4 a_forma;
 uniform float u_radioCabeza;
 uniform float u_aspecto;
 uniform float u_anchoPx;  // ancho del objetivo en px, para saber qué tan grande se ve
+uniform float u_deshecho[8];  // cuánto se deshizo cada cabeza al soplarla
 
 out vec2 v_q;
 out float v_prof;
 out float v_pixeles;
+out float v_deshecho;
 
 void main() {
   vec3 normal;
@@ -21,5 +23,6 @@ void main() {
   v_q = a_esquina;
   v_prof = length(punta - u_camara);
   v_pixeles = r * u_anchoPx * 0.5;
+  v_deshecho = u_deshecho[min(gl_InstanceID, 7)];
   gl_Position = clip + vec4(a_esquina * r * vec2(1.0, u_aspecto), 0.0, 0.0) * clip.w;
 }

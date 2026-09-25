@@ -171,3 +171,33 @@ describe("una flor puesta a mano", () => {
     expect(cabezas[0]?.x).toBeGreaterThan(600);
   });
 });
+
+describe("soplar un diente de león", () => {
+  const flor = { x: 0.55, z: -3.2, altura: 0.78 };
+  const camara = (base: ReturnType<typeof crearParametros>["camara"]) => ({
+    ...base,
+    fov: 20,
+    altura: 0.85,
+    mirarY: 0.3,
+  });
+
+  it("cada cabeza informa su radio en pantalla, para poder tocarla", () => {
+    const f = crearGlFalso();
+    const { prado } = montar(f, { dientes: [flor], ajustarCamara: camara });
+    alObservar?.([{ isIntersecting: true }]);
+    cuadros.at(-1)?.(16);
+    expect(prado?.cabezasEnPantalla()[0]?.radio).toBeGreaterThan(5);
+  });
+
+  it("al soplarla, el shader recibe que esa cabeza se está deshaciendo", () => {
+    const f = crearGlFalso();
+    const { prado } = montar(f, { dientes: [flor], ajustarCamara: camara });
+    alObservar?.([{ isIntersecting: true }]);
+    cuadros.at(-1)?.(1000);
+    prado?.soplar(0);
+    cuadros.at(-1)?.(1016);
+    cuadros.at(-1)?.(1400);
+    const [, valores] = (f.ultimos.get("uniform1fv") ?? []) as [unknown, Float32Array];
+    expect(valores?.[0]).toBeGreaterThan(0);
+  });
+});

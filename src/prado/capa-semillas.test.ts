@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
+import { crearAzar } from "./azar";
 import {
   ATRIBUTOS_CAPA,
   FLOTANTES_POR_SEMILLA,
   hayQueDibujar,
   instanciasSemillas,
+  instanciasSueltas,
 } from "./capa-semillas";
 import { crearSemillas, type Semilla } from "./semillas";
+import { crearSueltas, soltarSemillas } from "./semillas-sueltas";
 
 function semillasCon(cambios: Partial<Semilla>[]): Semilla[] {
   return crearSemillas(cambios.length, 1).map((s, i) => ({ ...s, x: 100, y: 100, ...cambios[i] }));
@@ -86,5 +89,16 @@ describe("costo de la capa", () => {
     expect(hayQueDibujar(0, 0)).toBe(false);
     expect(hayQueDibujar(0, 3)).toBe(true);
     expect(hayQueDibujar(3, 0)).toBe(true);
+  });
+});
+
+describe("instanciasSueltas", () => {
+  it("dibuja cada semilla suelta con su opacidad de vuelo", () => {
+    const s = crearSueltas();
+    soltarSemillas(s, { x: 300, y: 200 }, 30, 10, crearAzar(2));
+    for (const x of s.lista) x.edad = 1;
+    const datos = instanciasSueltas(s, 0);
+    expect(datos.length).toBe(10 * FLOTANTES_POR_SEMILLA);
+    expect(datos[3]).toBeGreaterThan(0.1);
   });
 });

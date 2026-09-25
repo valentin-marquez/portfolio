@@ -16,6 +16,7 @@ function motorFalso(sonandoAlArrancar = true) {
       llamadas.push("reanudar");
       sonando = true;
     },
+    soplo: (paneo) => llamadas.push(`soplo:${paneo.toFixed(1)}`),
     sonando: () => sonando,
     destruir: () => llamadas.push("destruir"),
   };
@@ -152,5 +153,14 @@ describe("crearControlAudio", () => {
     m.control.fijarViento(0.5, 0.8);
     expect(m.llamadas).toContain("viento:0.50@0.20");
     expect(m.llamadas).toContain("viento:0.50@0.80");
+  });
+
+  it("el soplo de una flor suena solo si el ambiente ya arrancó", () => {
+    const m = montar();
+    m.control.soplo(0.5);
+    expect(m.llamadas.some((l) => l.startsWith("soplo"))).toBe(false);
+    m.ventana.dispatchEvent(new Event("pointerdown"));
+    m.control.soplo(-0.5);
+    expect(m.llamadas).toContain("soplo:-0.5");
   });
 });

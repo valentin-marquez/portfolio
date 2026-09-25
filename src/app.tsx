@@ -76,6 +76,12 @@ export function App() {
       documento: document,
     });
 
+    // el soplo de una flor también suena, paneado hacia donde está; va en una microtarea para que el
+    // primer toque alcance a despertar el audio antes
+    const sonarSoplo = (cabeza: { x: number }) =>
+      queueMicrotask(() => audio.soplo((cabeza.x / window.innerWidth) * 2 - 1));
+    escena.alSoplar.push(sonarSoplo);
+
     // latido: el mismo viento para las semillas y el audio
     let raf = 0;
     let anterior: number | null = null;
@@ -104,6 +110,7 @@ export function App() {
     }
 
     return () => {
+      escena.alSoplar = escena.alSoplar.filter((f) => f !== sonarSoplo);
       vivo = false;
       cerrarDepuracion?.();
       window.removeEventListener("scroll", alScroll);

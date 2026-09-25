@@ -11,6 +11,8 @@ export interface MotorSonido {
   fijarSilencio(silenciado: boolean): void;
   suspender(): void;
   reanudar(): void;
+  /** un soplo corto y suave, paneado hacia donde está la flor (-1 izquierda, 1 derecha) */
+  soplo(paneo: number): void;
   /** el contexto de audio está corriendo (no suspendido por el navegador) */
   sonando(): boolean;
   destruir(): void;
@@ -114,6 +116,9 @@ export function crearControlAudio(dep: {
         Math.abs(viento - vientoEnviado) >= UMBRAL_VIENTO ||
         Math.abs(frente - frenteEnviado) >= UMBRAL_FRENTE;
       if (cambio) enviarViento();
+    },
+    soplo(paneo: number) {
+      motor?.soplo(Math.max(-1, Math.min(1, paneo)));
     },
     get silenciado() {
       return silenciado;

@@ -26,6 +26,8 @@ export const escena = {
   zonaAterrizaje: null as null | (() => Rect | null),
   /** ancho del contenido centrado que las semillas no deben cruzar */
   columna: COLUMNA,
+  /** quienes reaccionan cuando alguien sopla un diente de león (las semillas, el sonido) */
+  alSoplar: [] as Array<(cabeza: { x: number; y: number; radio: number }) => void>,
 };
 
 /**

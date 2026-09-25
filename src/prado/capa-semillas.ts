@@ -1,5 +1,7 @@
 // Capa fija a la ventana donde viajan las semillas. La simulación vive en semillas.ts; aquí solo se
 // arma el buffer de instancias y se dibujan como sprites procedurales con alfa premultiplicado.
+
+import { crearAzar } from "./azar";
 import { FUENTES } from "./fuentes";
 import { crearPrograma, ubicaciones } from "./gl/programa";
 import { pasoTiempo } from "./motor";
@@ -11,6 +13,13 @@ import {
   type Semilla,
   semillaCercana,
 } from "./semillas";
+import {
+  actualizarSueltas,
+  alfaSuelta,
+  crearSueltas,
+  type Sueltas,
+  soltarSemillas,
+} from "./semillas-sueltas";
 
 export const FLOTANTES_POR_SEMILLA = 6; // x, y, tamaño, alfa, desenfoque, giro
 const CANTIDAD = 6;
@@ -39,6 +48,8 @@ export interface FuenteCapa {
   zonaAterrizaje(): Rect | null;
   columna: number;
   reducirMovimiento: boolean;
+  /** hacia dónde sopla el viento en pantalla */
+  sentido(): 1 | -1;
 }
 
 export function instanciasSemillas(
@@ -66,6 +77,24 @@ export function instanciasSemillas(
     );
   }
   return new Float32Array(datos);
+}
+
+/** Las semillas que se soltaron al soplar una flor, con el mismo formato que las del recorrido. */
+export function instanciasSueltas(s: Sueltas, tiempo: number): Float32Array {
+  const datos = new Float32Array(s.lista.length * FLOTANTES_POR_SEMILLA);
+  s.lista.forEach((x, i) => {
+    const giro = Math.sin(tiempo * 0.9 + x.fase) * 0.35 + x.vx * 0.002;
+    datos.set([x.x, x.y, x.tam, alfaSuelta(x), x.desenfoque, giro], i * FLOTANTES_POR_SEMILLA);
+  });
+  return datos;
+}
+
+function unir(a: Float32Array, b: Float32Array): Float32Array {
+  if (b.length === 0) return a;
+  const c = new Float32Array(a.length + b.length);
+  c.set(a);
+  c.set(b, a.length);
+  return c;
 }
 
 function crearRecursos(gl: WebGL2RenderingContext) {
@@ -118,12 +147,14 @@ function crearRecursos(gl: WebGL2RenderingContext) {
 export function montarCapaSemillas(
   canvas: HTMLCanvasElement,
   fuente: FuenteCapa,
-): { destruir(): void } | null {
+): { destruir(): void; soltar(cabeza: Punto, radio: number): void } | null {
   const contexto = canvas.getContext("webgl2", ATRIBUTOS_CAPA);
   if (!contexto) return null;
   const gl = contexto;
   let recursos: ReturnType<typeof crearRecursos> | null = crearRecursos(gl);
   const semillas = crearSemillas(CANTIDAD, 11);
+  const sueltas = crearSueltas();
+  const azarSueltas = crearAzar(23);
   let raf = 0;
   let anterior: number | null = null;
   let dibujadasAntes = 0;
@@ -159,12 +190,16 @@ export function montarCapaSemillas(
       canvas.height = alto;
     }
     gl.viewport(0, 0, ancho, alto);
-    const datos = instanciasSemillas(
-      semillas,
-      semillaCercana(tiempo, progreso),
-      fuente.rectHero(),
-      tiempo,
-      fuente.reducirMovimiento,
+    actualizarSueltas(sueltas, dt, fuente.viento(), fuente.sentido());
+    const datos = unir(
+      instanciasSemillas(
+        semillas,
+        semillaCercana(tiempo, progreso),
+        fuente.rectHero(),
+        tiempo,
+        fuente.reducirMovimiento,
+      ),
+      instanciasSueltas(sueltas, tiempo),
     );
     const cantidad = datos.length / FLOTANTES_POR_SEMILLA;
     if (hayQueDibujar(dibujadasAntes, cantidad)) recursos.dibujar(datos, anchoCss, altoCss);
@@ -183,6 +218,12 @@ export function montarCapaSemillas(
   canvas.addEventListener("webglcontextrestored", alRecuperar);
 
   return {
+    soltar(cabeza, radio) {
+      // con movimiento reducido la flor se deshace, pero sus semillas no salen volando
+      if (fuente.reducirMovimiento) return;
+      const cantidad = Math.round(Math.min(36, Math.max(12, radio * 0.6)));
+      soltarSemillas(sueltas, cabeza, radio, cantidad, azarSueltas);
+    },
     destruir() {
       cancelAnimationFrame(raf);
       canvas.removeEventListener("webglcontextlost", alPerder);

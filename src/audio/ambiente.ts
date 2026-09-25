@@ -120,6 +120,27 @@ export function crearMotorSonido(
       banda.frequency.setTargetAtTime(s.frecuencia, t, 1.6);
       paneo.pan.setTargetAtTime(s.paneo, t, 0.9);
     },
+    soplo(p) {
+      // un soplo: el mismo ruido rosa, filtrado más arriba, con subida rápida y cola larga
+      const t = ctx.currentTime;
+      const fuente = ctx.createBufferSource();
+      fuente.buffer = buffer;
+      const filtro = ctx.createBiquadFilter();
+      filtro.type = "bandpass";
+      filtro.frequency.value = 900;
+      filtro.Q.value = 0.7;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.09, t + 0.08);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+      const lado = ctx.createStereoPanner();
+      lado.pan.value = p;
+      fuente.connect(filtro).connect(g).connect(lado);
+      lado.connect(maestro);
+      lado.connect(reverb);
+      fuente.start(t, Math.random() * 6);
+      fuente.stop(t + 1.3);
+    },
     fijarSilencio(s) {
       silenciado = s;
       maestro.gain.setTargetAtTime(objetivo(), ctx.currentTime, 0.3);

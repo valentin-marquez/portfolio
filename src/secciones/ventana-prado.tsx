@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { escena } from "@/estado/escena";
+import { cabezaTocada } from "@/prado/cabezas";
 import { elegirCalidad } from "@/prado/calidad";
 import { soportaWebGL2 } from "@/prado/gl/soporte";
 import { montarPrado, type Prado } from "@/prado/motor";
@@ -78,16 +79,34 @@ export function VentanaPrado({
     }
     const montado = prado;
     alMontar(montado, contenedor.current);
+    const florBajo = (e: PointerEvent) => {
+      const cabezas = montado.cabezasEnPantalla();
+      const i = cabezaTocada({ x: e.clientX, y: e.clientY }, cabezas);
+      return i >= 0 ? { indice: i, cabeza: cabezas[i] } : null;
+    };
     const mover = (e: PointerEvent) => {
       const r = canvas.getBoundingClientRect();
       montado.fijarPuntero(e.clientX - r.left, e.clientY - r.top);
+      // sobre una flor, el cursor invita a tocarla
+      canvas.style.cursor = florBajo(e) ? "pointer" : "";
     };
-    const salir = () => montado.fijarPuntero(Number.NaN, Number.NaN);
+    const salir = () => {
+      montado.fijarPuntero(Number.NaN, Number.NaN);
+      canvas.style.cursor = "";
+    };
+    const tocar = (e: PointerEvent) => {
+      const flor = florBajo(e);
+      if (!flor?.cabeza) return;
+      montado.soplar(flor.indice);
+      for (const reaccion of escena.alSoplar) reaccion(flor.cabeza);
+    };
     canvas.addEventListener("pointermove", mover);
     canvas.addEventListener("pointerleave", salir);
+    canvas.addEventListener("pointerdown", tocar);
     return () => {
       canvas.removeEventListener("pointermove", mover);
       canvas.removeEventListener("pointerleave", salir);
+      canvas.removeEventListener("pointerdown", tocar);
       alMontar(null, null);
       montado.destruir();
     };

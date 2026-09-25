@@ -1,6 +1,7 @@
 // Motor del prado: WebGL2 escrito a mano, sin React. Dibuja cielo, pasto y dientes de león en un
 // objetivo con MSAA y dos salidas (color + profundidad) y compone el resultado en el canvas con los
 // bordes disueltos. React solo lo monta y le pasa el scroll y el puntero.
+import { estadoCabeza } from "./cabezas";
 import type { Calidad } from "./calidad";
 import {
   invertir,
@@ -54,8 +55,10 @@ export interface Prado {
   fijarEnPausa(pausa: boolean): void;
   /** px CSS relativos al canvas; NaN cuando el puntero sale */
   fijarPuntero(x: number, y: number): void;
-  /** puntas de los dientes de león en px de viewport */
-  cabezasEnPantalla(): Array<{ x: number; y: number }>;
+  /** cabezas de los dientes de león en px de viewport, con su radio en pantalla */
+  cabezasEnPantalla(): Array<{ x: number; y: number; radio: number }>;
+  /** sopla un diente de león: se deshace, queda pelado un rato y vuelve a llenarse */
+  soplar(indice: number): void;
   destruir(): void;
 }
 
@@ -79,6 +82,9 @@ export function visibleSegun(entradas: ReadonlyArray<{ isIntersecting: boolean }
 const tieneColorFlotante = (gl: WebGL2RenderingContext) =>
   gl.getExtension("EXT_color_buffer_float") !== null;
 
+/** cuántas cabezas puede seguir el shader (u_deshecho) */
+const MAX_CABEZAS = 8;
+
 const NOMBRES_HOJA = [
   "u_vistaProy",
   "u_camara",
@@ -101,6 +107,8 @@ interface EstadoCuadro {
   extra: number;
   puntero: [number, number, number, number];
   rastro: Float32Array;
+  /** cuánto se deshizo cada cabeza (0 llena, 1 pelada) */
+  deshecho: Float32Array;
   movimiento: number;
   ancho: number;
   alto: number;
@@ -189,6 +197,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     "u_bruma",
     "u_densidadBruma",
     "u_anchoPx",
+    "u_deshecho",
   ] as const);
   const uDof = ubicaciones(gl, progDof, [
     "u_color",
@@ -310,6 +319,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     c3(uDiente.u_bruma, p.bruma.color);
     gl.uniform1f(uDiente.u_densidadBruma, p.bruma.densidad);
     gl.uniform1f(uDiente.u_anchoPx, e.ancho);
+    gl.uniform1fv(uDiente.u_deshecho, e.deshecho);
     // las cabezas son translúcidas: se mezclan con alfa premultiplicado sobre el pasto ya dibujado
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -417,6 +427,10 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
   const rastro = crearRastro();
   let fuerzaPuntero = 0;
   let ultimaVp: Mat4 | null = null;
+  // segundos (reloj de la página) en que se sopló cada cabeza; null si nunca
+  const sopladas: Array<number | null> = [];
+  let ahoraS = 0;
+  const deshecho = new Float32Array(MAX_CABEZAS);
 
   function fallar(error: unknown) {
     console.error(error);
@@ -430,6 +444,7 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
     raf = 0;
     if (!visible || perdido || fallido || enPausa || !recursos) return;
     try {
+      ahoraS = ahora / 1000;
       const dt = pasoTiempo(anterior, ahora);
       anterior = ahora;
       const movimiento = op.reducirMovimiento ? 0.15 : 1;
@@ -485,6 +500,7 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
         extra,
         puntero: [bajoCursor.x, bajoCursor.z, radioQuieto, fuerzaPuntero],
         rastro: uniformeRastro(rastro),
+        deshecho: calcularDeshecho(),
         movimiento,
         ancho,
         alto,
@@ -495,6 +511,14 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
       return;
     }
     raf = requestAnimationFrame(cuadro);
+  }
+
+  function calcularDeshecho() {
+    for (let i = 0; i < MAX_CABEZAS; i++) {
+      const t = sopladas[i];
+      deshecho[i] = estadoCabeza(t === undefined || t === null ? null : ahoraS - t);
+    }
+    return deshecho;
   }
 
   const pedir = () => {
@@ -562,10 +586,23 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
       const vp = ultimaVp;
       if (!recursos || !vp) return [];
       const r = canvas.getBoundingClientRect();
+      const radioCabeza = op.radioCabeza ?? p.diente.radioCabeza;
       return recursos.dientes.map((d) => {
         const q = proyectar(vp, { x: d.x, y: d.altura * 0.97, z: d.z });
-        return { x: r.left + (q.x * 0.5 + 0.5) * r.width, y: r.top + (0.5 - q.y * 0.5) * r.height };
+        const borde = proyectar(vp, { x: d.x + radioCabeza, y: d.altura * 0.97, z: d.z });
+        return {
+          x: r.left + (q.x * 0.5 + 0.5) * r.width,
+          y: r.top + (0.5 - q.y * 0.5) * r.height,
+          radio: Math.abs(borde.x - q.x) * 0.5 * r.width,
+        };
       });
+    },
+    soplar(indice) {
+      const actual = sopladas[indice];
+      // una cabeza que se está deshaciendo o pelada no se vuelve a soplar
+      if (indice < 0 || indice >= MAX_CABEZAS) return;
+      if (actual !== undefined && actual !== null && estadoCabeza(ahoraS - actual) > 0.05) return;
+      sopladas[indice] = ahoraS;
     },
     destruir() {
       observador.disconnect();
