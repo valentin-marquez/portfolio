@@ -8,10 +8,15 @@ import { pasoTiempo } from "./motor";
 import {
   actualizarSemillas,
   crearSemillas,
+  type Desprendida,
+  desprendimiento,
+  type Origen,
+  type Puntero,
   type Punto,
   type Rect,
   type Semilla,
   semillaCercana,
+  suavizarDesprendimiento,
 } from "./semillas";
 import {
   actualizarSueltas,
@@ -41,7 +46,8 @@ export function hayQueDibujar(anteriores: number, actuales: number): boolean {
 export interface FuenteCapa {
   progreso(): number;
   viento(): number;
-  origenes(): Punto[];
+  /** las cabezas de los dientes de león del hero, de donde salen las semillas */
+  origenes(): Origen[];
   destinos(): Punto[];
   rectHero(): Rect | null;
   /** la ventana del prado del cierre, donde aterrizan */
@@ -50,6 +56,8 @@ export interface FuenteCapa {
   reducirMovimiento: boolean;
   /** hacia dónde sopla el viento en pantalla */
   sentido(): 1 | -1;
+  /** cuánto ha perdido cada flor del hero por las semillas que andan afuera */
+  desprender?(fracciones: ReadonlyArray<number>): void;
 }
 
 export function instanciasSemillas(
@@ -63,8 +71,8 @@ export function instanciasSemillas(
   for (const s of semillas) {
     if (s.alfa <= 0.003) continue;
     if (reducir && s.fase === "vuelo") continue;
-    const giro = reducir ? 0 : Math.sin(tiempo * 0.7 + s.fasePropia) * 0.25;
-    datos.push(s.x, s.y, s.tam, s.alfa, s.desenfoque, giro);
+    const giro = reducir ? 0 : Math.sin(tiempo * 0.7 + s.fasePropia) * 0.25 + s.giro;
+    datos.push(s.x, s.y, s.tam * s.escala, s.alfa, s.desenfoque, giro);
   }
   if (cercana.activa && rectHero && !reducir) {
     datos.push(
@@ -87,6 +95,61 @@ export function instanciasSueltas(s: Sueltas, tiempo: number): Float32Array {
     datos.set([x.x, x.y, x.tam, alfaSuelta(x), x.desenfoque, giro], i * FLOTANTES_POR_SEMILLA);
   });
   return datos;
+}
+
+/** semillas sueltas que acompañan a cada una que se desprende: un soplido chico */
+const SUELTAS_AL_DESPRENDER = 3;
+const RAPIDEZ_MAXIMA_PUNTERO = 3000;
+
+/**
+ * El puntero sobre la página, con su velocidad suavizada. La capa no captura eventos (no tapa clics
+ * ni la selección de texto): se escucha la ventana. Si la mano se queda quieta, el aire se calma.
+ */
+function seguirPuntero(ventana: Window) {
+  let p: (Puntero & { t: number }) | null = null;
+  const mover = (e: PointerEvent) => {
+    if (!p) {
+      p = { x: e.clientX, y: e.clientY, vx: 0, vy: 0, t: e.timeStamp };
+      return;
+    }
+    const dt = Math.max(4, e.timeStamp - p.t) / 1000;
+    // a medias con la anterior: un evento suelto no hace un soplido
+    p.vx += ((e.clientX - p.x) / dt - p.vx) * 0.5;
+    p.vy += ((e.clientY - p.y) / dt - p.vy) * 0.5;
+    const rapidez = Math.hypot(p.vx, p.vy);
+    if (rapidez > RAPIDEZ_MAXIMA_PUNTERO) {
+      p.vx *= RAPIDEZ_MAXIMA_PUNTERO / rapidez;
+      p.vy *= RAPIDEZ_MAXIMA_PUNTERO / rapidez;
+    }
+    p.x = e.clientX;
+    p.y = e.clientY;
+    p.t = e.timeStamp;
+  };
+  const salir = (e: PointerEvent) => {
+    if (e.relatedTarget === null) p = null;
+  };
+  const olvidar = () => {
+    p = null;
+  };
+  ventana.addEventListener("pointermove", mover, { passive: true });
+  ventana.addEventListener("pointerout", salir);
+  ventana.addEventListener("blur", olvidar);
+  return {
+    leer(ahoraMs: number, dt: number): Puntero | null {
+      if (!p) return null;
+      if (ahoraMs - p.t > 60) {
+        const calma = Math.exp(-dt * 12);
+        p.vx *= calma;
+        p.vy *= calma;
+      }
+      return p;
+    },
+    destruir() {
+      ventana.removeEventListener("pointermove", mover);
+      ventana.removeEventListener("pointerout", salir);
+      ventana.removeEventListener("blur", olvidar);
+    },
+  };
 }
 
 function unir(a: Float32Array, b: Float32Array): Float32Array {
@@ -155,6 +218,8 @@ export function montarCapaSemillas(
   const semillas = crearSemillas(CANTIDAD, 11);
   const sueltas = crearSueltas();
   const azarSueltas = crearAzar(23);
+  const puntero = seguirPuntero(window);
+  let desprendido: number[] = [];
   let raf = 0;
   let anterior: number | null = null;
   let dibujadasAntes = 0;
@@ -169,19 +234,36 @@ export function montarCapaSemillas(
     // el tamaño del canvas (sin la barra de scroll) es el del diseño: la columna se centra ahí
     const anchoCss = canvas.clientWidth || window.innerWidth;
     const altoCss = canvas.clientHeight || window.innerHeight;
-    actualizarSemillas(semillas, {
-      progreso,
-      tiempo,
-      dt,
-      viento: fuente.viento(),
-      ancho: anchoCss,
-      alto: altoCss,
-      columna: fuente.columna,
-      origenes: fuente.origenes(),
-      destinos: fuente.destinos(),
-      zonaAterrizaje: fuente.zonaAterrizaje(),
-      reducir: fuente.reducirMovimiento,
-    });
+    const origenes = fuente.origenes();
+    const rectHero = fuente.rectHero();
+    // sin flores todavía (el prado del hero aún no monta) no hay de dónde salir: esperan
+    const soltadas: Desprendida[] =
+      origenes.length === 0
+        ? []
+        : actualizarSemillas(semillas, {
+            progreso,
+            tiempo,
+            dt,
+            viento: fuente.viento(),
+            ancho: anchoCss,
+            alto: altoCss,
+            columna: fuente.columna,
+            origenes,
+            destinos: fuente.destinos(),
+            zonaAterrizaje: fuente.zonaAterrizaje(),
+            zonaSalida: rectHero,
+            puntero: puntero.leer(ahora, dt),
+            sentido: fuente.sentido(),
+            reducir: fuente.reducirMovimiento,
+          });
+    // cada semilla que se va deja a su flor un poco más pelada, y se lleva unas sueltas con ella
+    if (!fuente.reducirMovimiento)
+      for (const d of soltadas)
+        soltarSemillas(sueltas, d.origen, d.radio, SUELTAS_AL_DESPRENDER, azarSueltas);
+    const objetivo = desprendimiento(semillas, origenes, fuente.reducirMovimiento);
+    if (desprendido.length !== objetivo.length) desprendido = objetivo.map(() => 0);
+    suavizarDesprendimiento(desprendido, objetivo, dt);
+    fuente.desprender?.(desprendido);
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const ancho = Math.round(anchoCss * dpr);
     const alto = Math.round(altoCss * dpr);
@@ -195,7 +277,7 @@ export function montarCapaSemillas(
       instanciasSemillas(
         semillas,
         semillaCercana(tiempo, progreso),
-        fuente.rectHero(),
+        rectHero,
         tiempo,
         fuente.reducirMovimiento,
       ),
@@ -226,6 +308,7 @@ export function montarCapaSemillas(
     },
     destruir() {
       cancelAnimationFrame(raf);
+      puntero.destruir();
       canvas.removeEventListener("webglcontextlost", alPerder);
       canvas.removeEventListener("webglcontextrestored", alRecuperar);
       recursos?.destruir();

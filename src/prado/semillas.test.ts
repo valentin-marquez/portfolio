@@ -4,10 +4,14 @@ import {
   actualizarSemillas,
   crearSemillas,
   DESPEGUE,
+  desprendimiento,
   type Entorno,
   faseSegun,
+  MAXIMO_DESPRENDIDO,
   type Semilla,
   semillaCercana,
+  suavizarDesprendimiento,
+  umbralDespegue,
   zonasLaterales,
 } from "./semillas";
 
@@ -30,6 +34,9 @@ function entorno(progreso: number, extra: Partial<Entorno> = {}): Entorno {
       { x: 800, y: 720 },
     ],
     zonaAterrizaje: { left: 220, top: 600, width: 1000, height: 200 },
+    zonaSalida: null,
+    puntero: null,
+    sentido: 1,
     reducir: false,
     ...extra,
   };
@@ -194,5 +201,180 @@ describe("semillaCercana", () => {
     for (let t = 0; t < 30; t += 0.1) if (semillaCercana(t, 0.03).activa) alguna = true;
     expect(alguna).toBe(true);
     for (let t = 0; t < 30; t += 0.1) expect(semillaCercana(t, 0.3).activa).toBe(false);
+  });
+});
+
+describe("las semillas salen de las flores del hero con el scroll", () => {
+  // el hero: ahí están las flores y las semillas pueden verse aunque caigan sobre la columna
+  const hero = { left: 220, top: 100, width: 1000, height: 400 };
+
+  it("se desprenden de a una a lo largo del primer tramo del scroll", () => {
+    const n = 6;
+    const umbrales = Array.from({ length: n }, (_, i) => umbralDespegue(i, n));
+    expect(umbrales[0]).toBeCloseTo(DESPEGUE);
+    expect(umbrales[n - 1]).toBeCloseTo(0.12);
+    for (let i = 1; i < n; i++) expect(umbrales[i]).toBeGreaterThan(umbrales[i - 1] as number);
+  });
+
+  it("a mitad del tramo, unas ya volaron y las demás siguen en su flor", () => {
+    const s = crearSemillas(6, 1);
+    const medio = (umbralDespegue(2, 6) + umbralDespegue(3, 6)) / 2;
+    simular(s, medio, 1, { zonaSalida: hero });
+    expect(s.map((x) => x.fase)).toEqual(["vuelo", "vuelo", "vuelo", "reposo", "reposo", "reposo"]);
+  });
+
+  it("avisa una sola vez cuándo y de qué flor se suelta cada semilla", () => {
+    const s = crearSemillas(6, 1);
+    simular(s, 0, 1, { zonaSalida: hero });
+    const primera = actualizarSemillas(s, entorno(umbralDespegue(0, 6), { zonaSalida: hero }));
+    expect(primera).toEqual([{ indice: 0, origen: { x: 500, y: 300 }, radio: 12 }]);
+    expect(actualizarSemillas(s, entorno(umbralDespegue(0, 6), { zonaSalida: hero }))).toEqual([]);
+  });
+
+  it("se la ve salir de su flor: aparece ahí mismo y se va con el viento", () => {
+    const s = crearSemillas(6, 1);
+    simular(s, 0, 1, { zonaSalida: hero });
+    simular(s, umbralDespegue(0, 6), 0.4, { zonaSalida: hero, sentido: 1 });
+    const x = s[0] as Semilla;
+    expect(x.alfa).toBeGreaterThan(0.25);
+    // la flor está en (500, 300): la semilla salió hacia donde sopla, sin alejarse de golpe
+    expect(x.x).toBeGreaterThan(500);
+    expect(Math.hypot(x.x - 500, x.y - 300)).toBeLessThan(120);
+  });
+
+  it("sale del tamaño de su flor y crece mientras vuela hacia la cámara", () => {
+    const s = crearSemillas(6, 1);
+    const conRadio = [{ x: 500, y: 300, radio: 8 }, ...entorno(0).origenes.slice(1)];
+    simular(s, 0, 1, { zonaSalida: hero, origenes: conRadio });
+    simular(s, umbralDespegue(0, 6), 0.1, { zonaSalida: hero, origenes: conRadio });
+    const x = s[0] as Semilla;
+    expect(x.tam * x.escala).toBeLessThanOrEqual(8 * 1.3 + 1);
+    simular(s, umbralDespegue(0, 6), 3, { zonaSalida: hero, origenes: conRadio });
+    expect(x.escala).toBeGreaterThan(0.97);
+  });
+
+  it("al volver arriba regresa visible hasta su flor y recién ahí se oculta", () => {
+    const s = crearSemillas(6, 1);
+    simular(s, 0.5, 10, { zonaSalida: hero });
+    simular(s, 0, 0.6, { zonaSalida: hero });
+    const lejos = s.filter((x) => Math.hypot(x.x - 500, x.y - 300) > 80 && x.indice % 3 === 0);
+    for (const x of lejos) expect(x.alfa).toBeGreaterThan(0.1);
+    simular(s, 0, 20, { zonaSalida: hero });
+    for (const x of s) expect(x.alfa).toBeLessThan(0.02);
+  });
+});
+
+describe("desprendimiento de cada flor", () => {
+  const origenes = [
+    { x: 500, y: 300 },
+    { x: 720, y: 280 },
+    { x: 940, y: 310 },
+  ];
+
+  it("con todas sus semillas fuera, cada flor pierde lo máximo y no queda pelada", () => {
+    const s = crearSemillas(6, 1);
+    simular(s, 0.5, 5);
+    const d = desprendimiento(s, origenes, false);
+    expect(d).toEqual([MAXIMO_DESPRENDIDO, MAXIMO_DESPRENDIDO, MAXIMO_DESPRENDIDO]);
+    expect(MAXIMO_DESPRENDIDO).toBeLessThan(0.6);
+  });
+
+  it("pierde en proporción a las semillas que ya se fueron", () => {
+    const s = crearSemillas(6, 1);
+    simular(s, umbralDespegue(0, 6), 1);
+    // la semilla 0 es de la flor 0, que tiene dos (la 0 y la 3)
+    expect(desprendimiento(s, origenes, false)).toEqual([MAXIMO_DESPRENDIDO / 2, 0, 0]);
+  });
+
+  it("se vuelve a llenar cuando sus semillas llegan de vuelta, no antes", () => {
+    const s = crearSemillas(6, 1);
+    simular(s, 0.5, 10);
+    simular(s, 0, 0.3);
+    expect(desprendimiento(s, origenes, false)[0]).toBeGreaterThan(0);
+    simular(s, 0, 20);
+    expect(desprendimiento(s, origenes, false)).toEqual([0, 0, 0]);
+  });
+
+  it("con movimiento reducido las flores no se deshacen", () => {
+    const s = crearSemillas(6, 1);
+    simular(s, 0.5, 5, { reducir: true });
+    expect(desprendimiento(s, origenes, true)).toEqual([0, 0, 0]);
+  });
+
+  it("se deshace rápido y se rellena más despacio", () => {
+    const d = [0];
+    suavizarDesprendimiento(d, [0.4], 0.3);
+    expect(d[0]).toBeGreaterThan(0.3);
+    const r = [0.4];
+    suavizarDesprendimiento(r, [0], 0.3);
+    expect(r[0]).toBeGreaterThan(0.15);
+  });
+});
+
+describe("el puntero sopla las semillas del costado", () => {
+  function enCarril() {
+    const s = crearSemillas(6, 1);
+    simular(s, 0.5, 15);
+    return s;
+  }
+
+  /** Dos prados iguales; en uno, un gesto de 600 px/s pasa rozando la primera semilla. */
+  function conYSinGesto() {
+    const con = enCarril();
+    const sin = enCarril();
+    const x = con[0] as Semilla;
+    const inicio = { x: x.x, y: x.y };
+    for (let i = 0; i < 12; i++) {
+      const puntero = { x: inicio.x - 60 + i * 10, y: inicio.y + 10, vx: 600, vy: 0 };
+      actualizarSemillas(con, entorno(0.5, { puntero, tiempo: 15 + i / 60 }));
+      actualizarSemillas(sin, entorno(0.5, { tiempo: 15 + i / 60 }));
+    }
+    const distancia = () =>
+      Math.hypot(
+        (con[0] as Semilla).x - (sin[0] as Semilla).x,
+        (con[0] as Semilla).y - (sin[0] as Semilla).y,
+      );
+    const seguir = (segundos: number) => {
+      simular(con, 0.5, segundos);
+      simular(sin, 0.5, segundos);
+    };
+    return { con, sin, distancia, seguir };
+  }
+
+  it("un gesto que pasa cerca la empuja hacia donde va la mano", () => {
+    const { con, sin, seguir } = conYSinGesto();
+    seguir(0.3);
+    expect((con[0] as Semilla).x - (sin[0] as Semilla).x).toBeGreaterThan(25);
+  });
+
+  it("después vuelve despacio a su carril", () => {
+    const { distancia, seguir } = conYSinGesto();
+    seguir(1);
+    expect(distancia()).toBeGreaterThan(15);
+    seguir(12);
+    expect(distancia()).toBeLessThan(3);
+  });
+
+  it("un puntero quieto o lejos no la mueve", () => {
+    const quieto = enCarril();
+    const lejos = enCarril();
+    const referencia = enCarril();
+    const a = quieto[0] as Semilla;
+    const puntero = { x: a.x + 20, y: a.y, vx: 0, vy: 0 };
+    simular(quieto, 0.5, 1, { puntero });
+    const p2 = { x: a.x + 400, y: a.y, vx: 900, vy: 0 };
+    simular(lejos, 0.5, 1, { puntero: p2 });
+    simular(referencia, 0.5, 1);
+    expect(quieto[0]?.x).toBeCloseTo(referencia[0]?.x as number, 3);
+    expect(lejos[0]?.x).toBeCloseTo(referencia[0]?.x as number, 3);
+  });
+
+  it("con movimiento reducido no se empujan", () => {
+    const s = crearSemillas(6, 1);
+    simular(s, 0.5, 5, { reducir: true });
+    const x = s[0] as Semilla;
+    const antes = x.x;
+    simular(s, 0.5, 1, { reducir: true, puntero: { x: x.x - 10, y: x.y, vx: 900, vy: 0 } });
+    expect(x.x).toBe(antes);
   });
 });

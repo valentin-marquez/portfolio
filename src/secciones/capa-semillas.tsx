@@ -37,6 +37,8 @@ export function CapaSemillas() {
         },
         reducirMovimiento: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
         sentido: sentidoActual,
+        // las flores del hero pierden las semillas que se van con el scroll
+        desprender: (fracciones) => escena.pradoHero?.desprender(fracciones),
       });
     } catch (error) {
       console.error(error);

@@ -200,4 +200,27 @@ describe("soplar un diente de león", () => {
     const [, valores] = (f.ultimos.get("uniform1fv") ?? []) as [unknown, Float32Array];
     expect(valores?.[0]).toBeGreaterThan(0);
   });
+
+  it("las semillas que se van con el scroll también la deshacen, sin pelarla", () => {
+    const f = crearGlFalso();
+    const { prado } = montar(f, { dientes: [flor], ajustarCamara: camara });
+    alObservar?.([{ isIntersecting: true }]);
+    prado?.desprender([0.3]);
+    cuadros.at(-1)?.(1000);
+    const [, valores] = (f.ultimos.get("uniform1fv") ?? []) as [unknown, Float32Array];
+    expect(valores?.[0]).toBeCloseTo(0.3);
+  });
+
+  it("entre el soplo y el scroll manda lo que esté más deshecho", () => {
+    const f = crearGlFalso();
+    const { prado } = montar(f, { dientes: [flor], ajustarCamara: camara });
+    alObservar?.([{ isIntersecting: true }]);
+    cuadros.at(-1)?.(1000);
+    prado?.soplar(0);
+    prado?.desprender([0.3]);
+    cuadros.at(-1)?.(1016);
+    cuadros.at(-1)?.(5000);
+    const [, valores] = (f.ultimos.get("uniform1fv") ?? []) as [unknown, Float32Array];
+    expect(valores?.[0]).toBe(1);
+  });
 });

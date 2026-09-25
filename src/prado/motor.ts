@@ -59,6 +59,8 @@ export interface Prado {
   cabezasEnPantalla(): Array<{ x: number; y: number; radio: number }>;
   /** sopla un diente de león: se deshace, queda pelado un rato y vuelve a llenarse */
   soplar(indice: number): void;
+  /** cuánto ha perdido cada cabeza (0..1) por las semillas que se fueron con el scroll */
+  desprender(fracciones: ArrayLike<number>): void;
   destruir(): void;
 }
 
@@ -431,6 +433,7 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
   const sopladas: Array<number | null> = [];
   let ahoraS = 0;
   const deshecho = new Float32Array(MAX_CABEZAS);
+  const desprendidas = new Float32Array(MAX_CABEZAS);
 
   function fallar(error: unknown) {
     console.error(error);
@@ -516,7 +519,9 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
   function calcularDeshecho() {
     for (let i = 0; i < MAX_CABEZAS; i++) {
       const t = sopladas[i];
-      deshecho[i] = estadoCabeza(t === undefined || t === null ? null : ahoraS - t);
+      const soplo = estadoCabeza(t === undefined || t === null ? null : ahoraS - t);
+      // soplada o sin las semillas que se llevó el scroll: manda lo que esté más deshecho
+      deshecho[i] = Math.max(soplo, desprendidas[i] ?? 0);
     }
     return deshecho;
   }
@@ -603,6 +608,9 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
       if (indice < 0 || indice >= MAX_CABEZAS) return;
       if (actual !== undefined && actual !== null && estadoCabeza(ahoraS - actual) > 0.05) return;
       sopladas[indice] = ahoraS;
+    },
+    desprender(fracciones) {
+      for (let i = 0; i < MAX_CABEZAS; i++) desprendidas[i] = fracciones[i] ?? 0;
     },
     destruir() {
       observador.disconnect();
