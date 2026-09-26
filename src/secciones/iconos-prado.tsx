@@ -5,8 +5,8 @@ import { motion } from "motion/react";
 
 type Props = { className?: string; activo: boolean };
 
-/** vuelta a la forma quieta, desde donde haya quedado el loop */
-const QUIETO = { type: "spring", stiffness: 260, damping: 18 } as const;
+/** vuelta a la forma quieta, desde donde haya quedado el loop, sin rebote */
+const QUIETO = { type: "spring", stiffness: 260, damping: 32 } as const;
 const loop = (duracion: number, retraso = 0) =>
   ({
     duration: duracion,

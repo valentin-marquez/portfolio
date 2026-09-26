@@ -7,6 +7,8 @@ const APAGADO = "grayscale(1) brightness(0.5) contrast(1.25)";
 const ENCENDIDO = "grayscale(0) brightness(1) contrast(1)";
 /** el estirón del texto: rápido y con un rebote apenas visible */
 const ESTIRON = { type: "spring", stiffness: 600, damping: 14, mass: 0.6 } as const;
+/** la vuelta, sin rebote: si oscila alrededor de 1, el texto titila al re-rasterizarse */
+const VUELTA = { type: "spring", stiffness: 420, damping: 32, mass: 0.6 } as const;
 const COLOR = { duration: 0.15, ease: [0, 0, 0.2, 1] } as const;
 
 export type IconoVivo = ComponentType<{ className?: string; activo: boolean }>;
@@ -57,7 +59,7 @@ export function PalabraViva({
           scaleX: activo && !reducir ? 1.03 : 1,
           scaleY: activo && !reducir ? 1.03 : 1,
         }}
-        transition={{ default: ESTIRON, color: COLOR }}
+        transition={{ default: activo ? ESTIRON : VUELTA, color: COLOR }}
       >
         {texto}
       </motion.span>
