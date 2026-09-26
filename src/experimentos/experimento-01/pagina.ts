@@ -3,7 +3,7 @@
 import "@fontsource/public-sans/400.css";
 import "@fontsource/public-sans/500.css";
 import "./pagina.css";
-import { type Almacen, crearControlAudio } from "@/audio/control";
+import { crearControlAudio } from "@/audio/control";
 import { accionBotonSonido, volumenGuardado } from "./boton-sonido";
 import { aPantalla, camaraEn, VISTA_CUADRADA } from "./camara";
 import { ICONOS } from "./contenido/iconos";
@@ -134,13 +134,6 @@ function modoPagina(escenario: HTMLElement) {
   alMover();
 
   // sonido: el mismo control del sitio (primer gesto, tecla M, pestaña oculta, preferencia guardada)
-  const almacen = (): Almacen | null => {
-    try {
-      return window.localStorage;
-    } catch {
-      return null;
-    }
-  };
   const botonSonido = document.querySelector<HTMLButtonElement>(".sonido");
   const deslizador = document.querySelector<HTMLInputElement>(".deslizador");
   const CLAVE_VOLUMEN = "experimento-01:volumen";
@@ -186,10 +179,11 @@ function modoPagina(escenario: HTMLElement) {
       reloj.conectar(motor);
       return motor;
     },
-    almacen: almacen(),
+    // la página siempre parte con sonido: no hereda el silencio que se haya puesto en la portada
+    almacen: null,
     ventana: window,
     documento: document,
-    alCambiar: () => pintarSonido(control.activo && !control.silenciado),
+    alCambiar: () => pintarSonido(!control.silenciado),
   });
   let sonabaAlTocar = false;
   for (const ev of ["pointerdown", "keydown"] as const) {
@@ -217,7 +211,7 @@ function modoPagina(escenario: HTMLElement) {
   // el estado real del audio puede cambiar sin avisar (el navegador lo habilita tras un gesto)
   let pintado: boolean | null = null;
   const vigilar = () => {
-    const activo = control.activo && !control.silenciado;
+    const activo = !control.silenciado;
     if (activo !== pintado) {
       pintado = activo;
       pintarSonido(activo);
