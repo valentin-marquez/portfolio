@@ -1,0 +1,97 @@
+/* Cromo de la página /experimento-01: la escena a pantalla completa y controles mínimos con la
+   tipografía y los grises del sitio. */
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #efebe1;
+}
+
+body {
+  font-family: "Public Sans", system-ui, sans-serif;
+  font-size: 13px;
+  color: #75756c;
+  -webkit-font-smoothing: antialiased;
+}
+
+#escenario {
+  position: fixed;
+  inset: 0;
+}
+
+.cromo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  pointer-events: none;
+}
+
+.cromo > * {
+  pointer-events: auto;
+}
+
+.acciones {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.volver,
+.cromo button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  margin: -8px -10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 150ms ease-out;
+}
+
+.volver:hover,
+.cromo button:hover {
+  color: #1f1f1b;
+}
+
+.volver:focus-visible,
+.cromo button:focus-visible {
+  outline: 2px solid #66794a;
+  outline-offset: 2px;
+}
+
+.credito {
+  position: fixed;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  color: #9a9a8f;
+  pointer-events: none;
+}
+
+/* como en un reproductor de video: el puntero quieto se esconde para que mande el de la coreografía */
+body.puntero-oculto,
+body.puntero-oculto * {
+  cursor: none;
+}
+
+.captura .cromo,
+.captura .credito {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .cromo {
+    padding: 16px;
+  }
+}
