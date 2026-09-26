@@ -129,6 +129,7 @@ body.puntero-oculto * {
 }
 
 .tipo {
+  margin-left: 8px;
   color: #9a9a8f;
   font-weight: 400;
 }
