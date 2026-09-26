@@ -41,7 +41,7 @@
   },
   "overrides": [
     {
-      "includes": ["src/prado/**", "src/audio/**"],
+      "includes": ["src/prado/**", "src/audio/**", "src/experimentos/**"],
       "linter": {
         "rules": {
           "correctness": {
