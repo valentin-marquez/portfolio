@@ -8,8 +8,8 @@ export interface Experimento {
 }
 
 export const experimentos: Experimento[] = [
-  { id: "experimento-01", titulo: "Experimento 01", anio: 2026, ruta: "/experimento-01" },
-  { id: "experimento-02", titulo: "Experimento 02", anio: 2026 },
-  { id: "experimento-03", titulo: "Experimento 03", anio: 2026 },
-  { id: "experimento-04", titulo: "Experimento 04", anio: 2026 },
+  { id: "experimento-01", titulo: "Experimento 1", anio: 2026, ruta: "/experimento-01" },
+  { id: "experimento-02", titulo: "Experimento 2", anio: 2026 },
+  { id: "experimento-03", titulo: "Experimento 3", anio: 2026 },
+  { id: "experimento-04", titulo: "Experimento 4", anio: 2026 },
 ];
