@@ -43,6 +43,13 @@ export default defineConfig({
           PAGINAS.map((p) => [p, fileURLToPath(new URL(`./${p}.html`, import.meta.url))]),
         ),
       },
+      output: {
+        // lo que comparten la portada y las páginas va en su propio archivo: si queda dentro del
+        // archivo de la portada, cada página ejecutaría también el arranque de la portada
+        advancedChunks: {
+          groups: [{ name: "compartido", test: /src\/(audio|prado)\/|node_modules\/(motion|motion-dom|motion-utils|framer-motion)\// }],
+        },
+      },
     },
   },
   // pre-empaquetadas desde el arranque: si Vite las descubre a mitad de sesión recarga con dos
