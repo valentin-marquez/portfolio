@@ -5,6 +5,9 @@ import { useEffect, useRef } from "react";
 import { crearReloj } from "@/experimentos/experimento-01/reloj";
 import { CUADRO_FIJO } from "@/experimentos/experimento-01/tiempo";
 
+/** cuánto más grande se ve la pieza en la tarjeta que en su página */
+const ACERCAR = 1.6;
+
 export function MiniaturaExperimento01() {
   const caja = useRef<HTMLDivElement>(null);
   const reducir = useReducedMotion();
@@ -26,7 +29,7 @@ export function MiniaturaExperimento01() {
         import("@/experimentos/experimento-01/montar")
           .then(({ montar }) => {
             if (cancelado) return;
-            montaje = montar(el);
+            montaje = montar(el, { acercar: ACERCAR });
             montaje.seek(reloj.t());
           })
           // sin WebGL2 la tarjeta queda con su fondo liso, sin error en consola

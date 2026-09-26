@@ -49,7 +49,10 @@ function crear<K extends keyof HTMLElementTagNameMap>(etiqueta: K, clase: string
 }
 
 /** `cuadrada`: la escena mide 1440×1440 fijo, sin densidad de pantalla (modo captura) */
-export function montar(contenedor: HTMLElement, opciones: { cuadrada?: boolean } = {}): Montaje {
+export function montar(
+  contenedor: HTMLElement,
+  opciones: { cuadrada?: boolean; acercar?: number } = {},
+): Montaje {
   const raiz = crear("div", "escena-01", contenedor);
   if (opciones.cuadrada) {
     raiz.style.width = `${LADO}px`;
@@ -80,6 +83,8 @@ export function montar(contenedor: HTMLElement, opciones: { cuadrada?: boolean }
     vista = opciones.cuadrada
       ? VISTA_CUADRADA
       : vistaPara(Math.max(1, raiz.clientWidth), Math.max(1, raiz.clientHeight));
+    // en contenedores chicos (la tarjeta) la pieza se puede acercar más de lo que da la vista
+    if (opciones.acercar) vista = { ...vista, escala: vista.escala * opciones.acercar };
     dpr = opciones.cuadrada ? 1 : Math.min(2, window.devicePixelRatio || 1);
     canvas.width = Math.round(vista.w * dpr);
     canvas.height = Math.round(vista.h * dpr);
