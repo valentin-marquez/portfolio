@@ -5,7 +5,6 @@
       "src/**/*.ts",
       "src/**/*.tsx",
       "herramientas/**/*.mjs",
-      "herramientas/**/*.js",
       "herramientas/**/*.ts",
       "!herramientas/*/salida/**",
       "*.ts",
