@@ -4,9 +4,16 @@
 import type { MotorSonido } from "@/audio/control";
 import { type FuenteTiempo, posicionEnLoop } from "./reloj";
 
-export interface MotorCumbia extends MotorSonido, FuenteTiempo {}
+export interface MotorCumbia extends MotorSonido, FuenteTiempo {
+  /** volumen de 0 a 1; el silencio lo sigue decidiendo fijarSilencio */
+  fijarVolumen(v: number): void;
+}
 
-export function crearMotorCumbia(dep: { url: string; desde: () => number }): MotorCumbia | null {
+export function crearMotorCumbia(dep: {
+  url: string;
+  desde: () => number;
+  volumen: number;
+}): MotorCumbia | null {
   if (typeof AudioContext === "undefined") return null;
   // a 48 kHz, la frecuencia del archivo: el loop cae exacto a la muestra
   const ctx = new AudioContext({ sampleRate: 48000 });
@@ -16,6 +23,9 @@ export function crearMotorCumbia(dep: { url: string; desde: () => number }): Mot
   let inicio = 0;
   let duracion = 0;
   let destruido = false;
+  let volumen = dep.volumen;
+  let mudo = false;
+  const aplicar = () => ganancia.gain.setTargetAtTime(mudo ? 0 : volumen, ctx.currentTime, 0.04);
 
   const empezar = (buffer: AudioBuffer) => {
     if (destruido) return;
@@ -32,7 +42,8 @@ export function crearMotorCumbia(dep: { url: string; desde: () => number }): Mot
 
   return {
     arrancar(silenciado) {
-      ganancia.gain.value = silenciado ? 0 : 1;
+      mudo = silenciado;
+      ganancia.gain.value = silenciado ? 0 : volumen;
       void ctx.resume();
       fetch(dep.url)
         .then((r) => r.arrayBuffer())
@@ -43,7 +54,12 @@ export function crearMotorCumbia(dep: { url: string; desde: () => number }): Mot
     fijarViento() {},
     soplo() {},
     fijarSilencio(silenciado) {
-      ganancia.gain.setTargetAtTime(silenciado ? 0 : 1, ctx.currentTime, 0.04);
+      mudo = silenciado;
+      aplicar();
+    },
+    fijarVolumen(v) {
+      volumen = v;
+      aplicar();
     },
     suspender() {
       void ctx.suspend();

@@ -17,7 +17,10 @@
       </div>
       <div class="acciones">
         <button class="reproducir" type="button" hidden>Reproducir</button>
-        <button class="sonido" type="button" aria-pressed="false" aria-label="Sonido"></button>
+        <div class="volumen">
+          <input class="deslizador" type="range" min="0" max="1" step="0.01" aria-label="Volumen" />
+          <button class="sonido" type="button" aria-pressed="false" aria-label="Sonido"></button>
+        </div>
       </div>
     </nav>
     <p class="credito">Cumbia B de KAIRONVOSS</p>

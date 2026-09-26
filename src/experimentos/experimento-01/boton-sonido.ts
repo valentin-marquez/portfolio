@@ -7,3 +7,12 @@ export function accionBotonSonido(sonabaAlTocar: boolean, silenciado: boolean): 
   if (silenciado) return "activar";
   return "nada";
 }
+
+/** volumen de la cumbia al llegar por primera vez */
+export const VOLUMEN_INICIAL = 0.8;
+
+/** el volumen guardado (texto de localStorage), acotado a [0, 1] */
+export function volumenGuardado(texto: string | null): number {
+  const v = Number.parseFloat(texto ?? "");
+  return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : VOLUMEN_INICIAL;
+}

@@ -4,7 +4,7 @@ import "@fontsource/public-sans/400.css";
 import "@fontsource/public-sans/500.css";
 import "./pagina.css";
 import { type Almacen, crearControlAudio } from "@/audio/control";
-import { accionBotonSonido } from "./boton-sonido";
+import { accionBotonSonido, volumenGuardado } from "./boton-sonido";
 import { aPantalla, camaraEn, VISTA_CUADRADA } from "./camara";
 import { ICONOS } from "./contenido/iconos";
 import { formaEn } from "./forma";
@@ -142,6 +142,25 @@ function modoPagina(escenario: HTMLElement) {
     }
   };
   const botonSonido = document.querySelector<HTMLButtonElement>(".sonido");
+  const deslizador = document.querySelector<HTMLInputElement>(".deslizador");
+  const CLAVE_VOLUMEN = "experimento-01:volumen";
+  let volumen = volumenGuardado(
+    (() => {
+      try {
+        return localStorage.getItem(CLAVE_VOLUMEN);
+      } catch {
+        return null;
+      }
+    })(),
+  );
+  let motorCumbia: ReturnType<typeof crearMotorCumbia> = null;
+  const pintarVolumen = () => {
+    if (!deslizador) return;
+    deslizador.value = String(volumen);
+    // el relleno del riel sigue al valor
+    deslizador.style.setProperty("--v", `${volumen * 100}%`);
+  };
+  pintarVolumen();
   const pintarSonido = (activo: boolean) => {
     if (!botonSonido) return;
     const trazo =
@@ -155,7 +174,12 @@ function modoPagina(escenario: HTMLElement) {
   };
   const control = crearControlAudio({
     crearMotor: () => {
-      const motor = crearMotorCumbia({ url: "/audio/experimento-01.flac", desde: () => reloj.t() });
+      const motor = crearMotorCumbia({
+        url: "/audio/experimento-01.flac",
+        desde: () => reloj.t(),
+        volumen,
+      });
+      motorCumbia = motor;
       motorActual = motor;
       // con la animación pausada (menos movimiento o «Pausar»), el primer gesto no hace sonar nada
       if (motor && pausadoPorVisitante) queueMicrotask(() => motor.suspender());
@@ -177,6 +201,18 @@ function modoPagina(escenario: HTMLElement) {
     const accion = accionBotonSonido(sonabaAlTocar, control.silenciado);
     if (accion !== "nada") control.alternarSilencio();
     sonabaAlTocar = false;
+  });
+  deslizador?.addEventListener("input", () => {
+    volumen = Number(deslizador.value);
+    pintarVolumen();
+    motorCumbia?.fijarVolumen(volumen);
+    // mover el volumen es querer escuchar: si estaba silenciado, se activa
+    if (control.silenciado && volumen > 0) control.alternarSilencio();
+    try {
+      localStorage.setItem(CLAVE_VOLUMEN, String(volumen));
+    } catch {
+      // sin almacenamiento, el volumen dura solo esta visita
+    }
   });
   // el estado real del audio puede cambiar sin avisar (el navegador lo habilita tras un gesto)
   let pintado: boolean | null = null;
