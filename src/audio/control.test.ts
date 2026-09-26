@@ -164,3 +164,45 @@ describe("crearControlAudio", () => {
     expect(m.llamadas).toContain("soplo:-0.5");
   });
 });
+
+describe("alternarSilencio", () => {
+  const crear = (almacen: Almacen & { datos: Map<string, string> }) => {
+    const { motor, llamadas } = motorFalso();
+    const avisos: boolean[] = [];
+    const ventana = new EventTarget();
+    const control = crearControlAudio({
+      crearMotor: () => motor,
+      almacen,
+      ventana,
+      documento: Object.assign(new EventTarget(), { hidden: false }),
+      alCambiar: (s) => avisos.push(s),
+    });
+    return { control, llamadas, avisos, ventana };
+  };
+
+  it("silencia, lo guarda y avisa; la segunda vez lo revierte", () => {
+    const almacen = almacenEnMemoria();
+    const m = crear(almacen);
+    m.ventana.dispatchEvent(new Event("pointerdown"));
+    m.control.alternarSilencio();
+    expect(m.control.silenciado).toBe(true);
+    expect(almacen.datos.get("prado:silencio")).toBe("1");
+    expect(m.llamadas).toContain("silencio:true");
+    m.control.alternarSilencio();
+    expect(m.control.silenciado).toBe(false);
+    expect(m.avisos).toEqual([true, false]);
+  });
+
+  it("la tecla M también avisa", () => {
+    const m = crear(almacenEnMemoria());
+    m.ventana.dispatchEvent(Object.assign(new Event("keydown"), { key: "m" }));
+    expect(m.avisos).toEqual([true]);
+  });
+
+  it("activo es verdadero solo con el motor sonando", () => {
+    const m = crear(almacenEnMemoria());
+    expect(m.control.activo).toBe(false);
+    m.ventana.dispatchEvent(new Event("pointerdown"));
+    expect(m.control.activo).toBe(true);
+  });
+});

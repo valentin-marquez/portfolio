@@ -49,6 +49,8 @@ export function crearControlAudio(dep: {
   almacen: Almacen | null;
   ventana: EventTarget;
   documento: EventTarget & { hidden: boolean };
+  /** avisa cada vez que cambia el silencio (tecla M o alternarSilencio) */
+  alCambiar?: (silenciado: boolean) => void;
 }) {
   let motor: MotorSonido | null = null;
   let intentado = false;
@@ -63,6 +65,13 @@ export function crearControlAudio(dep: {
     motor.fijarViento(viento, frente);
     vientoEnviado = viento;
     frenteEnviado = frente;
+  };
+
+  const alternar = () => {
+    silenciado = !silenciado;
+    guardarSilencio(dep.almacen, silenciado);
+    motor?.fijarSilencio(silenciado);
+    dep.alCambiar?.(silenciado);
   };
 
   const arrancar = () => {
@@ -90,11 +99,7 @@ export function crearControlAudio(dep: {
       destino?.tagName === "TEXTAREA" ||
       destino?.isContentEditable === true;
     const conModificador = k.ctrlKey || k.metaKey || k.altKey;
-    if (!escribiendo && !conModificador && (k.key === "m" || k.key === "M")) {
-      silenciado = !silenciado;
-      guardarSilencio(dep.almacen, silenciado);
-      motor?.fijarSilencio(silenciado);
-    }
+    if (!escribiendo && !conModificador && (k.key === "m" || k.key === "M")) alternar();
     alGesto();
   };
   const alVisibilidad = () => {
@@ -122,6 +127,11 @@ export function crearControlAudio(dep: {
     },
     get silenciado() {
       return silenciado;
+    },
+    alternarSilencio: alternar,
+    /** el motor existe y el navegador lo deja sonar */
+    get activo() {
+      return motor?.sonando() ?? false;
     },
     destruir() {
       for (const gesto of GESTOS) dep.ventana.removeEventListener(gesto, alGesto);

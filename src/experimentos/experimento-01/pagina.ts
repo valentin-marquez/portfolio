@@ -3,10 +3,14 @@
 import "@fontsource/public-sans/400.css";
 import "@fontsource/public-sans/500.css";
 import "./pagina.css";
+import { type Almacen, crearControlAudio } from "@/audio/control";
+import { accionBotonSonido } from "./boton-sonido";
 import { aPantalla, camaraEn, VISTA_CUADRADA } from "./camara";
+import { ICONOS } from "./contenido/iconos";
 import { formaEn } from "./forma";
 import { type EventoSonido, sonidos, TRAMOS } from "./guion";
 import { cargarFuentes, montar } from "./montar";
+import { crearMotorCumbia } from "./motor-cumbia";
 import { crearReloj } from "./reloj";
 import { CUADRO_FIJO, P } from "./tiempo";
 import { en } from "./util";
@@ -113,6 +117,60 @@ function modoPagina(escenario: HTMLElement) {
   };
   addEventListener("pointermove", alMover);
   alMover();
+
+  // sonido: el mismo control del sitio (primer gesto, tecla M, pestaña oculta, preferencia guardada)
+  const almacen = (): Almacen | null => {
+    try {
+      return window.localStorage;
+    } catch {
+      return null;
+    }
+  };
+  const botonSonido = document.querySelector<HTMLButtonElement>(".sonido");
+  const pintarSonido = (activo: boolean) => {
+    if (!botonSonido) return;
+    const trazo =
+      'fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"';
+    const ondas = activo
+      ? `<path d="${ICONOS.onda1}" ${trazo}/><path d="${ICONOS.onda2}" ${trazo}/>`
+      : `<path d="M16 9.5l5 5M21 9.5l-5 5" ${trazo}/>`;
+    botonSonido.innerHTML = `<svg viewBox="0 0 24 24"><path d="${ICONOS.parlante}" ${trazo}/>${ondas}</svg>`;
+    botonSonido.setAttribute("aria-pressed", String(activo));
+    botonSonido.setAttribute("aria-label", activo ? "Silenciar" : "Activar sonido");
+  };
+  const control = crearControlAudio({
+    crearMotor: () => {
+      const motor = crearMotorCumbia({ url: "/audio/experimento-01.flac", desde: () => reloj.t() });
+      reloj.conectar(motor);
+      return motor;
+    },
+    almacen: almacen(),
+    ventana: window,
+    documento: document,
+    alCambiar: () => pintarSonido(control.activo && !control.silenciado),
+  });
+  let sonabaAlTocar = false;
+  for (const ev of ["pointerdown", "keydown"] as const) {
+    botonSonido?.addEventListener(ev, () => {
+      sonabaAlTocar = control.activo && !control.silenciado;
+    });
+  }
+  botonSonido?.addEventListener("click", () => {
+    const accion = accionBotonSonido(sonabaAlTocar, control.silenciado);
+    if (accion !== "nada") control.alternarSilencio();
+    sonabaAlTocar = false;
+  });
+  // el estado real del audio puede cambiar sin avisar (el navegador lo habilita tras un gesto)
+  let pintado: boolean | null = null;
+  const vigilar = () => {
+    const activo = control.activo && !control.silenciado;
+    if (activo !== pintado) {
+      pintado = activo;
+      pintarSonido(activo);
+    }
+    requestAnimationFrame(vigilar);
+  };
+  requestAnimationFrame(vigilar);
 
   return { reloj };
 }

@@ -95,3 +95,14 @@ body.puntero-oculto * {
     padding: 16px;
   }
 }
+
+.sonido {
+  display: grid;
+  place-items: center;
+}
+
+.sonido svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
