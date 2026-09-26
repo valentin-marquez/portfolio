@@ -9,8 +9,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # un deploy a la vez; si llega otro push, espera en vez de cortar el que va a medias
 concurrency:
@@ -27,23 +25,27 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      - uses: oven-sh/setup-bun@v2
+      # de terceros: fijada a un commit exacto
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.2
       - run: bun install --frozen-lockfile
       - run: bun run test
       - run: bun run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
+  # solo este job puede publicar: el que construye no toca Pages
   publicar:
     needs: construir
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.despliegue.outputs.page_url }}
     steps:
       - id: despliegue
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
