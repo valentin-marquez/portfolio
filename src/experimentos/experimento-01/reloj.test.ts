@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { crearReloj, posicionEnLoop } from "./reloj";
+import { crearReloj, cruzo, posicionEnLoop } from "./reloj";
 
 describe("posicionEnLoop", () => {
   it("envuelve y descuenta el inicio", () => {
@@ -61,5 +61,19 @@ describe("crearReloj", () => {
     r.pausar();
     r.conectar({ posicion: () => 9 });
     expect(r.t()).toBe(3);
+  });
+});
+
+describe("cruzo", () => {
+  it("detecta el paso por una marca entre dos lecturas", () => {
+    expect(cruzo(4.9, 5.1, 5)).toBe(true);
+    expect(cruzo(5.1, 5.3, 5)).toBe(false);
+    expect(cruzo(4, 4.5, 5)).toBe(false);
+  });
+
+  it("también cuando el loop da la vuelta entre las dos lecturas", () => {
+    expect(cruzo(19.9, 0.1, 0.05)).toBe(true);
+    expect(cruzo(19.9, 0.1, 19.95)).toBe(true);
+    expect(cruzo(19.9, 0.1, 10)).toBe(false);
   });
 });

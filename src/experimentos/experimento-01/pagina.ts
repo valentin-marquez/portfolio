@@ -8,11 +8,11 @@ import { accionBotonSonido, volumenGuardado } from "./boton-sonido";
 import { aPantalla, camaraEn, VISTA_CUADRADA } from "./camara";
 import { ICONOS } from "./contenido/iconos";
 import { formaEn } from "./forma";
-import { type EventoSonido, sonidos, TRAMOS } from "./guion";
+import { type EventoSonido, PAUSA, sonidos, TRAMOS } from "./guion";
 import { cargarFuentes, montar } from "./montar";
 import { crearMotorCumbia } from "./motor-cumbia";
-import { crearReloj } from "./reloj";
-import { CUADRO_FIJO, P } from "./tiempo";
+import { crearReloj, cruzo } from "./reloj";
+import { CUADRO_FIJO, envolver, P } from "./tiempo";
 import { en } from "./util";
 
 declare global {
@@ -92,8 +92,16 @@ function modoPagina(escenario: HTMLElement) {
     pausadoPorVisitante = true;
   }
 
+  // la cumbia entra cuando el cursor de la animación aprieta play en el reproductor, con el audio
+  // ya sonando; antes solo se oyen los sonidos de la interfaz
+  let anterior: number | null = null;
   const cuadro = () => {
-    escena.seek(reloj.t());
+    const t = envolver(reloj.t());
+    if (motorCumbia?.posicion() != null) {
+      if (anterior !== null && cruzo(anterior, t, PAUSA.hasta)) motorCumbia.activarMusica();
+      anterior = t;
+    }
+    escena.seek(t);
     requestAnimationFrame(cuadro);
   };
   requestAnimationFrame(cuadro);
@@ -168,7 +176,8 @@ function modoPagina(escenario: HTMLElement) {
   const control = crearControlAudio({
     crearMotor: () => {
       const motor = crearMotorCumbia({
-        url: "/audio/experimento-01.flac",
+        efectos: "/audio/experimento-01-efectos.flac",
+        musica: "/audio/experimento-01-musica.flac",
         desde: () => reloj.t(),
         volumen,
       });

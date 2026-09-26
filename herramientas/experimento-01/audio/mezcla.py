@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Mezcla el tramo de cumbia con los sonidos de UI, cada uno con su pico en el instante del evento, y
-deja el loop que usa la página en public/audio/experimento-01.flac.
+"""Arma los dos loops que usa la página: la cumbia sola (public/audio/experimento-01-musica.flac) y los
+sonidos de UI solos, cada uno con su pico en el instante del evento (experimento-01-efectos.flac).
+Van separados para que la página haga sonar los efectos de entrada y la música recién cuando la
+animación aprieta play; comparten largo exacto, así que suenan en fase.
 
 Correr desde la raíz del repo después de `bun run exp01:eventos`:
     python3 herramientas/experimento-01/audio/mezcla.py
@@ -16,7 +18,7 @@ from sonidos import SR, pico, sonido
 AQUI = Path(__file__).resolve().parent.parent
 RAIZ = AQUI.parent.parent
 REJILLA = json.loads((RAIZ / "src" / "experimentos" / "experimento-01" / "rejilla.json").read_text())
-SALIDA = RAIZ / "public" / "audio" / "experimento-01.flac"
+SALIDA = RAIZ / "public" / "audio"
 MUSICA = 0.92
 
 
@@ -44,14 +46,15 @@ def main():
     print(f"{len(eventos)} sonidos · error máximo de pico {max(errores):.3f} ms")
     assert max(errores) < 1.0
 
-    mezcla = musica * MUSICA + efectos[:, None]
-    tope = np.max(np.abs(mezcla))
-    if tope > 0.99:
-        mezcla *= 0.99 / tope
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "f32le", "-ar", str(SR), "-ac", "2", "-i", "-",
-                    "-c:a", "flac", "-sample_fmt", "s16", str(SALIDA)],
-                   input=mezcla.astype(np.float32).tobytes(), check=True)
-    print(f"→ {SALIDA} (tope {tope:.3f})")
+    for nombre, senal in (("musica", musica * MUSICA), ("efectos", np.repeat(efectos[:, None], 2, axis=1))):
+        tope = np.max(np.abs(senal))
+        if tope > 0.99:
+            senal = senal * (0.99 / tope)
+        ruta = SALIDA / f"experimento-01-{nombre}.flac"
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "f32le", "-ar", str(SR), "-ac", "2", "-i", "-",
+                        "-c:a", "flac", "-sample_fmt", "s16", str(ruta)],
+                       input=senal.astype(np.float32).tobytes(), check=True)
+        print(f"→ {ruta} (tope {tope:.3f})")
 
 
 if __name__ == "__main__":

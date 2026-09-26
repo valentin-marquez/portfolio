@@ -48,3 +48,10 @@ export function crearReloj(ahora: () => number) {
     },
   };
 }
+
+/** si entre la lectura `antes` y la `ahora` (ambas dentro del loop) se pasó por `marca` */
+export function cruzo(antes: number, ahora: number, marca: number): boolean {
+  if (ahora >= antes) return antes < marca && marca <= ahora;
+  // dio la vuelta: tramo final del ciclo anterior o inicio del nuevo
+  return marca > antes || marca <= ahora;
+}
