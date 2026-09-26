@@ -2,10 +2,9 @@ import { ConCalma } from "./con-calma";
 import { Entrada } from "./entrada";
 import { IconoDedalDeOro, IconoHoja, IconoVentana } from "./iconos-prado";
 import { NombreConEdad } from "./nombre-con-edad";
-import { PalabraViento } from "./palabra-viento";
-import { GrupoViento } from "./rafaga-grupo";
+import { PalabraViva } from "./palabra-viva";
 
-// al pasar el mouse por el bloque, la ráfaga enciende las tres palabras con colores del prado:
+// cada palabra se enciende sola al pasarle el mouse, con un color del prado:
 // cielo, hoja y dedal de oro (AA sobre el fondo)
 const CIELO = "#35709c";
 const HOJA = "#52742e";
@@ -14,7 +13,7 @@ const DEDAL = "#b44f16";
 export function Intro() {
   return (
     <section className="mx-auto w-[560px] max-w-[calc(100%-32px)] pt-9">
-      <GrupoViento className="space-y-3.5">
+      <div className="space-y-3.5">
         <Entrada retraso={0.8}>
           <p>Hola,</p>
         </Entrada>
@@ -27,13 +26,12 @@ export function Intro() {
         <Entrada retraso={1.1}>
           <p>
             Aquí guardo experimentos:{" "}
-            <PalabraViento texto="interfaces" color={CIELO} Icono={IconoVentana} semilla={1} />,{" "}
-            <PalabraViento texto="movimiento" color={HOJA} Icono={IconoHoja} semilla={2} /> y
-            pequeñas piezas que se sienten{" "}
-            <PalabraViento texto="vivas" color={DEDAL} Icono={IconoDedalDeOro} semilla={3} />.
+            <PalabraViva texto="interfaces" color={CIELO} Icono={IconoVentana} />,{" "}
+            <PalabraViva texto="movimiento" color={HOJA} Icono={IconoHoja} /> y pequeñas piezas que
+            se sienten <PalabraViva texto="vivas" color={DEDAL} Icono={IconoDedalDeOro} />.
           </p>
         </Entrada>
-      </GrupoViento>
+      </div>
     </section>
   );
 }
