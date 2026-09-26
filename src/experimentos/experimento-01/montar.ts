@@ -8,7 +8,11 @@ import "@fontsource/geist-mono/400.css";
 import "@fontsource/geist-mono/500.css";
 import "./estilos.css";
 import { camaraEn, VISTA_CUADRADA, type Vista, vistaPara } from "./camara";
+import { crearBoton } from "./contenido/boton";
+import { crearCargador } from "./contenido/cargador";
+import { crearCheck } from "./contenido/check";
 import { crearCursor } from "./contenido/cursor";
+import { crearIsla } from "./contenido/isla";
 import type { Capa } from "./contenido/tipos";
 import { formaEn } from "./forma";
 import { crearLienzo } from "./gl/lienzo";
@@ -48,7 +52,12 @@ export function montar(contenedor: HTMLElement, opciones: { cuadrada?: boolean }
   const canvas = crear("canvas", "", raiz);
   const mundo = crear("div", "mundo", raiz);
   const lienzo = crearLienzo(canvas);
-  const capas: Capa[] = [];
+  const capas: Capa[] = [
+    crearBoton(mundo),
+    crearCargador(mundo),
+    crearCheck(mundo),
+    crearIsla(mundo),
+  ];
   const cursor = crearCursor(crear("div", "cursor-01", raiz));
 
   let vista: Vista = VISTA_CUADRADA;
