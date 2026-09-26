@@ -12,7 +12,9 @@ import { crearBoton } from "./contenido/boton";
 import { crearCargador } from "./contenido/cargador";
 import { crearCheck } from "./contenido/check";
 import { crearCursor } from "./contenido/cursor";
+import { crearGrafico } from "./contenido/grafico";
 import { crearIsla } from "./contenido/isla";
+import { crearPestanas } from "./contenido/pestanas";
 import { crearReproductor } from "./contenido/reproductor";
 import type { Capa } from "./contenido/tipos";
 import { crearVolumen } from "./contenido/volumen";
@@ -61,6 +63,8 @@ export function montar(contenedor: HTMLElement, opciones: { cuadrada?: boolean }
     crearIsla(mundo),
     crearReproductor(mundo),
     crearVolumen(mundo),
+    crearPestanas(mundo),
+    crearGrafico(mundo),
   ];
   const cursor = crearCursor(crear("div", "cursor-01", raiz));
 
