@@ -50,9 +50,18 @@ function modoCaptura(escenario: HTMLElement) {
 }
 
 function modoPagina(escenario: HTMLElement) {
-  const escena = montar(escenario);
+  let escena: ReturnType<typeof montar>;
+  try {
+    escena = montar(escenario);
+  } catch {
+    // sin WebGL2 (o sin GPU): un aviso en vez de una pantalla vacía; los controles siguen andando
+    escenario.innerHTML =
+      '<p class="sin-webgl">Este experimento necesita WebGL2, y este navegador no lo tiene.</p>';
+    return { reloj: crearReloj(() => 0) };
+  }
   const reloj = crearReloj(() => performance.now() / 1000);
   let pausadoPorVisitante = false;
+  let motorActual: { suspender(): void; reanudar(): void } | null = null;
 
   // menos movimiento: un cuadro fijo y un botón para reproducir si se quiere
   const reproducir = document.querySelector<HTMLButtonElement>(".reproducir");
@@ -64,8 +73,14 @@ function modoPagina(escenario: HTMLElement) {
   }
   reproducir?.addEventListener("click", () => {
     pausadoPorVisitante = !reloj.pausado;
-    if (pausadoPorVisitante) reloj.pausar();
-    else reloj.reanudar();
+    // el audio se pausa con la animación: si no, al reanudar la animación saltaría a donde va el audio
+    if (pausadoPorVisitante) {
+      reloj.pausar();
+      motorActual?.suspender();
+    } else {
+      reloj.reanudar();
+      motorActual?.reanudar();
+    }
     reproducir.textContent = pausadoPorVisitante ? "Reproducir" : "Pausar";
   });
 
@@ -141,6 +156,9 @@ function modoPagina(escenario: HTMLElement) {
   const control = crearControlAudio({
     crearMotor: () => {
       const motor = crearMotorCumbia({ url: "/audio/experimento-01.flac", desde: () => reloj.t() });
+      motorActual = motor;
+      // con la animación pausada (menos movimiento o «Pausar»), el primer gesto no hace sonar nada
+      if (motor && pausadoPorVisitante) queueMicrotask(() => motor.suspender());
       reloj.conectar(motor);
       return motor;
     },

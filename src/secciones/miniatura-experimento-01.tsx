@@ -23,11 +23,14 @@ export function MiniaturaExperimento01() {
       (entradas) => {
         if (!entradas.some((e) => e.isIntersecting) || montaje) return;
         observador.disconnect();
-        void import("@/experimentos/experimento-01/montar").then(({ montar }) => {
-          if (cancelado) return;
-          montaje = montar(el);
-          montaje.seek(reloj.t());
-        });
+        import("@/experimentos/experimento-01/montar")
+          .then(({ montar }) => {
+            if (cancelado) return;
+            montaje = montar(el);
+            montaje.seek(reloj.t());
+          })
+          // sin WebGL2 la tarjeta queda con su fondo liso, sin error en consola
+          .catch(() => {});
       },
       { rootMargin: "400px" },
     );
