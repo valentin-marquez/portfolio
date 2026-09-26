@@ -121,7 +121,7 @@ describe("cámara y vista", () => {
     expect(VISTA_CUADRADA).toEqual({ w: LADO, h: LADO, escala: 1 });
   });
 
-  it("la vista escala por el lado corto y centra la cámara en el contenedor", () => {
+  it("la vista escala según el contenedor y centra la cámara en él", () => {
     const c = { x: 10, y: -20, zoom: 3 };
     const tarjeta = vistaPara(272, 204);
     expect(tarjeta.escala).toBeCloseTo(204 / LADO, 12);
@@ -129,7 +129,8 @@ describe("cámara y vista", () => {
     const [x] = aPantalla(c, tarjeta, 11, -20);
     expect(x - 136).toBeCloseTo(3 * tarjeta.escala, 12);
     const telefono = vistaPara(390, 844);
-    expect(telefono.escala).toBeCloseTo(390 / LADO, 12);
+    // en pantallas angostas la escala sale del ancho con más aire: la paleta (la más ancha) cabe igual
+    expect(telefono.escala).toBeCloseTo(390 / 1000, 12);
     expect(aPantalla(c, telefono, 10, -20)).toEqual([195, 422]);
   });
 });

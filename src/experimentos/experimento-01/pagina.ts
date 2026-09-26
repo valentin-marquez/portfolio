@@ -65,6 +65,14 @@ function modoPagina(escenario: HTMLElement) {
     reproducir.textContent = pausadoPorVisitante ? "Reproducir" : "Pausar";
   });
 
+  // ?t=3.2 congela ese instante (para revisar un estado en cualquier tamaño de pantalla)
+  const fijo = new URLSearchParams(location.search).get("t");
+  if (fijo !== null) {
+    reloj.fijar(Number(fijo));
+    reloj.pausar();
+    pausadoPorVisitante = true;
+  }
+
   const cuadro = () => {
     escena.seek(reloj.t());
     requestAnimationFrame(cuadro);

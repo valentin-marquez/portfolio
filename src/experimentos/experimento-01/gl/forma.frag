@@ -83,7 +83,10 @@ vec3 prado(vec2 uv, float escala) {
   float altoTallo = cabeza.y - suelo + 0.02;
   float tallo = hoja(uv - vec2(0.0, suelo - 0.02), 0.66, altoTallo, 0.006, 0.06 * viento / altoTallo);
   c = mix(c, uPastoCuerpo, cubre(tallo, escala));
-  c = mix(c, vec3(0.97, 0.96, 0.93), cubre(length(uv - cabeza) - 0.075, escala) * 0.95);
+  // la cabeza lleva un borde gris suave: blanca sobre el cielo claro no se distinguía
+  float dCabeza = length(uv - cabeza);
+  c = mix(c, vec3(0.74, 0.74, 0.68), cubre(dCabeza - 0.09, escala) * 0.7);
+  c = mix(c, vec3(0.98, 0.97, 0.94), cubre(dCabeza - 0.074, escala));
   return c;
 }
 

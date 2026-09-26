@@ -28,8 +28,10 @@ export interface Vista {
   escala: number;
 }
 
+/** la escala sale del alto sobre 1440, salvo en pantallas angostas (teléfonos): ahí del ancho sobre
+ *  1000, que es lo que ocupa el estado más ancho con aire a los lados */
 export function vistaPara(w: number, h: number): Vista {
-  return { w, h, escala: Math.min(w, h) / LADO };
+  return { w, h, escala: Math.min(w / 1000, h / LADO) };
 }
 
 export const VISTA_CUADRADA: Vista = vistaPara(LADO, LADO);
