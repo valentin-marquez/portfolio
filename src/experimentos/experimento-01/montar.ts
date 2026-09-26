@@ -13,7 +13,9 @@ import { crearCargador } from "./contenido/cargador";
 import { crearCheck } from "./contenido/check";
 import { crearCursor } from "./contenido/cursor";
 import { crearIsla } from "./contenido/isla";
+import { crearReproductor } from "./contenido/reproductor";
 import type { Capa } from "./contenido/tipos";
+import { crearVolumen } from "./contenido/volumen";
 import { formaEn } from "./forma";
 import { crearLienzo } from "./gl/lienzo";
 import { envolver, LADO } from "./tiempo";
@@ -57,6 +59,8 @@ export function montar(contenedor: HTMLElement, opciones: { cuadrada?: boolean }
     crearCargador(mundo),
     crearCheck(mundo),
     crearIsla(mundo),
+    crearReproductor(mundo),
+    crearVolumen(mundo),
   ];
   const cursor = crearCursor(crear("div", "cursor-01", raiz));
 
