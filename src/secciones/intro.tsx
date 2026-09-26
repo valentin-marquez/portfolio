@@ -2,9 +2,9 @@ import { ConCalma } from "./con-calma";
 import { Entrada } from "./entrada";
 import { IconoDedalDeOro, IconoHoja, IconoVentana } from "./iconos-prado";
 import { NombreConEdad } from "./nombre-con-edad";
-import { PalabraViva } from "./palabra-viva";
+import { FraseViva, PalabraViva } from "./palabra-viva";
 
-// cada palabra se enciende sola al pasarle el mouse, con un color del prado:
+// al pasar el mouse por la frase se encienden sus tres palabras, con un color del prado:
 // cielo, hoja y dedal de oro (AA sobre el fondo)
 const CIELO = "#35709c";
 const HOJA = "#52742e";
@@ -24,12 +24,12 @@ export function Intro() {
           </h1>
         </Entrada>
         <Entrada retraso={1.1}>
-          <p>
+          <FraseViva>
             Aquí guardo experimentos:{" "}
             <PalabraViva texto="interfaces" color={CIELO} Icono={IconoVentana} />,{" "}
             <PalabraViva texto="movimiento" color={HOJA} Icono={IconoHoja} /> y pequeñas piezas que
             se sienten <PalabraViva texto="vivas" color={DEDAL} Icono={IconoDedalDeOro} />.
-          </p>
+          </FraseViva>
         </Entrada>
       </div>
     </section>
