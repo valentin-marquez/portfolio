@@ -1,0 +1,99 @@
+/* La escena del Experimento 01. Todo va bajo .escena-01: también se monta en la portada y no puede
+   filtrar estilos. Nada de will-change aquí ni adentro: el texto se rasterizaría a la escala vieja. */
+.escena-01 {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #efebe1;
+  pointer-events: none;
+  user-select: none;
+}
+
+.escena-01 canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+}
+
+/* el mundo: px de diseño con el origen en el centro de la forma; la cámara lo traslada y escala */
+.escena-01 .mundo,
+.escena-01 .grupo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+
+.escena-01 .grupo > * {
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.escena-01 .texto {
+  font-family: "Geist Sans", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.escena-01 .mono {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.escena-01 .icono {
+  display: block;
+  overflow: visible;
+}
+
+.escena-01 .cursor-01 {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+
+.escena-01 .cursor-01 svg {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 1px 1.2px rgb(0 0 0 / 0.28));
+}
+
+/* botón, cargador, check, isla */
+.escena-01 .etiqueta-boton { font-size: 15px; font-weight: 500; color: #fff; letter-spacing: -0.01em; }
+.escena-01 .barra-eq { width: 3px; border-radius: 1.5px; background: #fff; }
+
+/* reproductor y volumen */
+.escena-01 .titulo-cancion { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: -0.01em; }
+.escena-01 .artista { font-size: 11px; font-weight: 500; color: #9d9a90; letter-spacing: 0.04em; }
+.escena-01 .barra-fondo { height: 4px; border-radius: 2px; background: rgb(255 255 255 / 0.18); }
+.escena-01 .barra-relleno { height: 4px; border-radius: 2px; background: #fff; }
+.escena-01 .perilla { width: 12px; height: 12px; border-radius: 6px; background: #fff; }
+.escena-01 .tiempo { font-size: 10px; color: #9d9a90; }
+.escena-01 .control { color: #fff; }
+.escena-01 .volumen-fondo { height: 6px; border-radius: 3px; background: rgb(255 255 255 / 0.18); }
+.escena-01 .volumen-relleno { height: 6px; border-radius: 3px; background: #fff; }
+
+/* pestañas y gráfico */
+.escena-01 .pestana { font-size: 14px; font-weight: 500; }
+.escena-01 .pestana-chica { font-size: 11px; font-weight: 500; }
+.escena-01 .numero { font-size: 32px; font-weight: 600; color: #111110; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.escena-01 .etiqueta-grafico { font-size: 12px; color: #8a877d; }
+.escena-01 .guia { width: 1px; background: rgb(17 17 16 / 0.12); }
+.escena-01 .punto { width: 9px; height: 9px; border-radius: 50%; background: #66794a; box-shadow: 0 0 0 2px #fff; }
+.escena-01 .globo { padding: 5px 7px; border-radius: 6px; background: #111110; color: #fff; font-size: 11px; }
+
+/* paleta y toast */
+.escena-01 .linea-entrada { display: flex; align-items: center; gap: 1px; font-size: 15px; color: #111110; }
+.escena-01 .marcador { color: #a3a095; }
+.escena-01 .caret { width: 1.5px; height: 18px; background: #111110; }
+.escena-01 .divisor { width: 320px; height: 1px; background: rgb(17 17 16 / 0.07); }
+.escena-01 .fila-texto { font-size: 14px; font-weight: 500; }
+.escena-01 .atajo { font-size: 11px; }
+.escena-01 .circulo-toast { width: 18px; height: 18px; border-radius: 9px; background: #66794a; }
+.escena-01 .texto-toast { font-size: 14px; font-weight: 500; color: #fff; }
