@@ -57,7 +57,7 @@ export function montar(contenedor: HTMLElement, opciones: { cuadrada?: boolean }
   }
   const canvas = crear("canvas", "", raiz);
   const mundo = crear("div", "mundo", raiz);
-  const lienzo = crearLienzo(canvas);
+  const lienzo = crearLienzo(canvas, opciones.cuadrada === true);
   const capas: Capa[] = [
     crearBoton(mundo),
     crearCargador(mundo),
@@ -105,11 +105,25 @@ export function montar(contenedor: HTMLElement, opciones: { cuadrada?: boolean }
     seek(ultimo);
   });
   observador.observe(raiz);
+  // cambiar de monitor o de zoom puede cambiar la densidad sin cambiar el tamaño
+  let densidad: MediaQueryList | null = null;
+  const alCambiarDensidad = () => {
+    medir();
+    seek(ultimo);
+    vigilarDensidad();
+  };
+  const vigilarDensidad = () => {
+    densidad?.removeEventListener("change", alCambiarDensidad);
+    densidad = matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+    densidad.addEventListener("change", alCambiarDensidad);
+  };
+  if (!opciones.cuadrada) vigilarDensidad();
 
   return {
     seek,
     destruir() {
       observador.disconnect();
+      densidad?.removeEventListener("change", alCambiarDensidad);
       lienzo.destruir();
       raiz.remove();
     },

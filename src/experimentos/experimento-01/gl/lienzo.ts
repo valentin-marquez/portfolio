@@ -38,11 +38,12 @@ export interface Lienzo {
   destruir(): void;
 }
 
-export function crearLienzo(canvas: HTMLCanvasElement): Lienzo {
+/** `capturable`: guarda el búfer entre cuadros (solo lo necesitan las capturas; cuesta rendimiento) */
+export function crearLienzo(canvas: HTMLCanvasElement, capturable = false): Lienzo {
   const gl = canvas.getContext("webgl2", {
     alpha: false,
     antialias: false,
-    preserveDrawingBuffer: true,
+    preserveDrawingBuffer: capturable,
   });
   if (!gl) throw new Error("este navegador no tiene WebGL2");
   const programa = crearPrograma(gl, CABECERA + pantallaVert, CABECERA + formaFrag);
