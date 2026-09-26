@@ -12,7 +12,7 @@ describe("color", () => {
     for (const hex of ["#66794a", "#111110", "#ffffff", "#d6d2c6"]) {
       const c = hexARgb(hex);
       const vuelta = oklabARgb(rgbAOklab(c));
-      c.forEach((v, i) => expect(vuelta[i]).toBeCloseTo(v, 6));
+      for (const [i, v] of c.entries()) expect(vuelta[i]).toBeCloseTo(v, 6);
     }
   });
 
