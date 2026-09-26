@@ -149,8 +149,8 @@ export const PUNTOS_VOLUMEN: readonly Punto[] = [
   [ARRASTRE_VOLUMEN.t0, xDeVolumen(VOLUMEN.inicial)],
   [pulso(12), xDeVolumen(0.7)],
   [pulso(13), vol.x1 + 14],
-  [pulso(13.6), vol.x1 + 70],
-  [ARRASTRE_VOLUMEN.t1, vol.x1 + 64],
+  [pulso(13.6), vol.x1 + 44],
+  [ARRASTRE_VOLUMEN.t1, vol.x1 + 40],
 ];
 export const xArrastreVolumen = recorrido(PUNTOS_VOLUMEN);
 

@@ -26,7 +26,6 @@ export interface Pieza {
   alto: number;
   color: Rgb;
   opacidad: number;
-  cuello: number;
 }
 
 export interface Arte {
@@ -52,8 +51,6 @@ export interface Forma {
 
 /** cuánto se achica la caja al presionarla */
 const HUNDIDO = 0.04;
-/** cuello líquido: cuánto se afina la pieza por unidad de estiramiento, y su tope */
-const CUELLO = { factor: 0.6, tope: 0.3 };
 
 const porEstado = (valor: (e: Estado) => number, r: Resorte): Cambio[] =>
   TRAMOS.slice(1).map((tr) => ({ t: tr.desde, a: valor(tr.estado), r }));
@@ -65,9 +62,10 @@ const alto = pistaCiclica([
 ]);
 const radio = pistaCiclica(porEstado((e) => CAJAS[e].r, R.firme));
 const centroY = pistaCiclica(CENTROS_Y.map((c) => ({ t: c.t, a: c.y, r: R.firme })));
+// el color cambia más rápido que la forma: entre negro y claro, el gris del medio se ve sucio
 const color = pistaColor([
-  ...TRAMOS.slice(1).map((tr) => ({ t: tr.desde, color: CAJAS[tr.estado].color, r: R.firme })),
-  ...COLORES_EXTRA.map((c) => ({ t: c.t, color: c.color, r: R.firme })),
+  ...TRAMOS.slice(1).map((tr) => ({ t: tr.desde, color: CAJAS[tr.estado].color, r: R.rapido })),
+  ...COLORES_EXTRA.map((c) => ({ t: c.t, color: c.color, r: R.rapido })),
 ]);
 const hundido = pistaCiclica(
   CLICS.filter((c) => c.hunde === "forma").flatMap((c) => [
@@ -97,8 +95,8 @@ function pistasPieza() {
     R: pistaCiclica(Rb),
     cy: pistaCiclica(POSES.map((p) => ({ t: p.t, a: p.cy, r: R.firme }))),
     alto: pistaCiclica(POSES.map((p) => ({ t: p.t, a: p.alto, r: R.firme }))),
-    reposo: pistaCiclica(POSES.map((p) => ({ t: p.t, a: p.R - p.L, r: R.firme }))),
-    color: pistaColor(POSES.map((p) => ({ t: p.t, color: p.color, r: R.firme }))),
+    // blanco ↔ negro pasa por gris: el cambio es casi inmediato para que ese gris no se vea
+    color: pistaColor(POSES.map((p) => ({ t: p.t, color: p.color, r: R.salida }))),
     opacidad: pistaCiclica(
       OPACIDAD_PIEZA.map((o) => ({ t: o.t, a: o.a, r: o.a > 0 ? R.rapido : R.salida })),
     ),
@@ -123,7 +121,6 @@ export function formaEn(t: number): Forma {
   const escala = 1 - HUNDIDO * hun;
   const L = pieza.L(t);
   const Rb = pieza.R(t);
-  const estira = (Rb - L) / Math.max(pieza.reposo(t), 1e-3);
   return {
     // la goma alarga el lado arrastrado: el borde izquierdo queda quieto
     cx: e / 2,
@@ -142,7 +139,6 @@ export function formaEn(t: number): Forma {
       alto: pieza.alto(t),
       color: pieza.color(t),
       opacidad: clamp01(pieza.opacidad(t)),
-      cuello: Math.min(CUELLO.tope, Math.max(0, (estira - 1) * CUELLO.factor)),
     },
     arte: {
       x: arte.x(t),

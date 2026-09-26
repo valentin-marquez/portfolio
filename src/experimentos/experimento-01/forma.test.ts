@@ -78,13 +78,19 @@ describe("forma", () => {
     expect(formaEn(pulso(15) - 0.06).estiramiento).toBeLessThan(0.5);
   });
 
-  it("la pieza se estira al encender el interruptor y el cuello nunca pasa de 0,3", () => {
-    let maxInterruptor = 0;
+  it("la pieza se estira al encender el interruptor y vuelve a su ancho", () => {
+    let max = 0;
     for (let t = pulso(16); t < pulso(16.6); t += 0.005) {
-      maxInterruptor = Math.max(maxInterruptor, formaEn(t).pieza.cuello);
+      const p = formaEn(t).pieza;
+      max = Math.max(max, (p.R - p.L) / p.alto);
     }
-    expect(maxInterruptor).toBeGreaterThan(0.05);
-    for (let t = 0; t < D; t += 0.01) expect(formaEn(t).pieza.cuello).toBeLessThanOrEqual(0.3);
+    expect(max).toBeGreaterThan(1.2);
+    const p = formaEn(pulso(17) - 0.02).pieza;
+    expect(p.R - p.L).toBeCloseTo(p.alto, 0);
+  });
+
+  it("la pieza es una cápsula que se estira, sin cuello (se veía como un hueso)", () => {
+    expect(Object.keys(formaEn(pulso(16.2)).pieza)).not.toContain("cuello");
   });
 
   it("se pone verde en el check y al encender el interruptor", () => {

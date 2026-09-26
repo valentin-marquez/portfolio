@@ -8,11 +8,10 @@ uniform vec3 uColorCaja;
 uniform vec4 uPieza;         // borde izquierdo, borde derecho, cy, alto
 uniform vec3 uColorPieza;
 uniform float uOpacidadPieza;
-uniform float uCuello;
 uniform vec4 uArte;          // cx, cy, lado, radio
 uniform float uOpacidadArte;
-uniform float uTiempo;
 uniform float uFasePulso;    // 0 → 1 dentro de cada pulso
+uniform float uCiclo;        // 0 → 1 a lo largo del loop
 uniform vec3 uLienzo;
 uniform vec3 uCieloArriba;
 uniform vec3 uCieloHorizonte;
@@ -27,12 +26,6 @@ float caja(vec2 p, vec2 medio, float r) {
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
 }
 
-float sminimo(float a, float b, float k) {
-  if (k <= 1e-4) return min(a, b);
-  float h = max(k - abs(a - b), 0.0) / k;
-  return min(a, b) - h * h * k * 0.25;
-}
-
 // cobertura con antialias de un píxel físico; `escala` pasa la distancia a px físicos
 float cubre(float d, float escala) {
   return clamp(0.5 - d * escala, 0.0, 1.0);
@@ -42,14 +35,11 @@ float capsula(vec2 p, float a, float b, float y, float r) {
   return length(p - vec2(clamp(p.x, a, b), y)) - r;
 }
 
-// la pieza: una cápsula que, al estirarse rápido, se afina en el centro como una gota que se separa
+// la pieza: una cápsula; sus bordes van en resortes distintos, así que se estira al moverse
 float pieza(vec2 p) {
   float r = 0.5 * uPieza.w;
   float a = uPieza.x + r;
-  float b = max(uPieza.y - r, a);
-  float cuerpo = capsula(p, a, b, uPieza.z, r * (1.0 - uCuello));
-  float extremos = min(length(p - vec2(a, uPieza.z)), length(p - vec2(b, uPieza.z))) - r;
-  return sminimo(extremos, cuerpo, r * uCuello * 2.5);
+  return capsula(p, a, max(uPieza.y - r, a), uPieza.z, r);
 }
 
 // una hoja de pasto: curva x = base + inclinación·s²·alto, más fina hacia la punta (distancia en uv)
@@ -64,8 +54,10 @@ float hoja(vec2 uv, float base, float alto, float ancho, float inclinacion) {
 // la carátula: un prado chico con los colores del portafolio, que se mece al pulso de la cumbia
 vec3 prado(vec2 uv, float escala) {
   vec3 c = mix(uCieloHorizonte, uCieloArriba, smoothstep(0.3, 1.0, uv.y));
-  float golpe = exp(-uFasePulso * 4.0);
-  float viento = 0.1 * sin(uTiempo * 1.3) + 0.22 * golpe;
+  // cada pulso empuja y suelta: empieza y termina en cero, así no salta al pulso siguiente
+  float golpe = sin(3.14159265 * uFasePulso) * exp(-2.5 * uFasePulso) * 2.1;
+  // y una brisa lenta que da cuatro vueltas enteras por loop, así tampoco salta al cerrarlo
+  float viento = 0.1 * sin(6.28318531 * 4.0 * uCiclo) + 0.2 * golpe;
   float suelo = 0.2 + 0.03 * sin(uv.x * 6.0 + 1.0);
   c = mix(c, uPastoBase, cubre(uv.y - suelo, escala));
   for (int i = 0; i < 28; i++) {

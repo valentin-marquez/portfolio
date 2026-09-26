@@ -8,7 +8,7 @@ import type { Camara } from "../camara";
 import { hexARgb } from "../color";
 import { COLOR } from "../disposicion";
 import type { Forma } from "../forma";
-import { P } from "../tiempo";
+import { D, P } from "../tiempo";
 import formaFrag from "./forma.frag?raw";
 
 const UNIFORMES = [
@@ -20,11 +20,10 @@ const UNIFORMES = [
   "uPieza",
   "uColorPieza",
   "uOpacidadPieza",
-  "uCuello",
   "uArte",
   "uOpacidadArte",
-  "uTiempo",
   "uFasePulso",
+  "uCiclo",
   "uLienzo",
   "uCieloArriba",
   "uCieloHorizonte",
@@ -72,11 +71,10 @@ export function crearLienzo(canvas: HTMLCanvasElement): Lienzo {
       gl.uniform4f(u.uPieza, f.pieza.L, f.pieza.R, f.pieza.cy, f.pieza.alto);
       gl.uniform3f(u.uColorPieza, ...f.pieza.color);
       gl.uniform1f(u.uOpacidadPieza, f.pieza.opacidad);
-      gl.uniform1f(u.uCuello, f.pieza.cuello);
       gl.uniform4f(u.uArte, f.arte.x, f.arte.y, f.arte.lado, f.arte.radio);
       gl.uniform1f(u.uOpacidadArte, f.arte.opacidad);
-      gl.uniform1f(u.uTiempo, t);
       gl.uniform1f(u.uFasePulso, (t / P) % 1);
+      gl.uniform1f(u.uCiclo, t / D);
       triangulo.dibujar();
     },
     destruir() {

@@ -65,7 +65,8 @@ describe("guion", () => {
     }
     expect(estiramientoVolumen(ARRASTRE_VOLUMEN.t0)).toBe(0);
     expect(max).toBeGreaterThan(25);
-    expect(max).toBeLessThan(50);
+    // más no: el cursor se despega de la píldora y la píldora se va hacia un lado
+    expect(max).toBeLessThan(32);
   });
 
   it("el reproductor muestra la canción real, se congela en la pausa y sigue después", () => {
