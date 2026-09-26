@@ -14,9 +14,11 @@ import { crearCheck } from "./contenido/check";
 import { crearCursor } from "./contenido/cursor";
 import { crearGrafico } from "./contenido/grafico";
 import { crearIsla } from "./contenido/isla";
+import { crearPaleta } from "./contenido/paleta";
 import { crearPestanas } from "./contenido/pestanas";
 import { crearReproductor } from "./contenido/reproductor";
 import type { Capa } from "./contenido/tipos";
+import { crearToast } from "./contenido/toast";
 import { crearVolumen } from "./contenido/volumen";
 import { formaEn } from "./forma";
 import { crearLienzo } from "./gl/lienzo";
@@ -65,6 +67,8 @@ export function montar(contenedor: HTMLElement, opciones: { cuadrada?: boolean }
     crearVolumen(mundo),
     crearPestanas(mundo),
     crearGrafico(mundo),
+    crearPaleta(mundo),
+    crearToast(mundo),
   ];
   const cursor = crearCursor(crear("div", "cursor-01", raiz));
 

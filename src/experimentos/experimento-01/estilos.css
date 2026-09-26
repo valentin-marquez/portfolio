@@ -92,7 +92,7 @@
 .escena-01 .linea-entrada { display: flex; align-items: center; gap: 1px; font-size: 15px; color: #111110; }
 .escena-01 .marcador { color: #a3a095; }
 .escena-01 .caret { width: 1.5px; height: 18px; background: #111110; }
-.escena-01 .divisor { width: 320px; height: 1px; background: rgb(17 17 16 / 0.07); }
+.escena-01 .divisor { width: 304px; height: 1px; background: rgb(17 17 16 / 0.07); }
 .escena-01 .fila-texto { font-size: 14px; font-weight: 500; }
 .escena-01 .atajo { font-size: 11px; }
 .escena-01 .circulo-toast { width: 18px; height: 18px; border-radius: 9px; background: #66794a; }
