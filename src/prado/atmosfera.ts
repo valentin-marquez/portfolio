@@ -293,7 +293,8 @@ export function aplicarAtmosfera(
   p.bruma.densidad += 0.03 * nv;
 
   const destello = w.tormenta > 0 ? destelloEn(t) * w.tormenta : 0;
-  const seco = Math.max(0, 1 - 2.2 * ll) * (1 - nv);
+  // con cualquier lluvia las mariposas se esconden y el polen no vuela
+  const seco = Math.max(0, 1 - 4 * ll) * (1 - nv);
   const motasVerano = e.verano * seco;
   const motasInvierno = e.invierno * seco * 0.7;
   const colorMotas = c(0, 0, 0);
