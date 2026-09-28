@@ -20,6 +20,8 @@ uniform vec3 u_bruma;
 uniform float u_densidadBruma;
 uniform int u_vista;
 uniform vec2 u_nubes;  // desplazamiento de las sombras de nubes, empujadas por el viento
+uniform float u_nubosidad;  // con el cielo cubierto las sombras de nubes se funden en una sola
+uniform float u_escarcha;   // puntas blanqueadas por la helada o la nieve
 
 layout(location = 0) out vec4 o_color;
 layout(location = 1) out vec4 o_prof;
@@ -40,7 +42,7 @@ void main() {
   // sombras de nubes: manchas amplias y suaves que cruzan despacio el prado
   vec2 pn = v_mundo.xz + u_nubes;
   float nube = smoothstep(0.1, 0.6, snoise(vec3(pn * 0.035, 0.7)) * 0.6 + snoise(vec3(pn * 0.09, 2.3)) * 0.4);
-  vec3 luzSol = u_colorSol * mix(1.0, 0.5, nube);
+  vec3 luzSol = u_colorSol * mix(1.0, 0.5, nube * (1.0 - 0.85 * u_nubosidad));
 
   float ao = mix(0.35, 1.0, smoothstep(0.0, 0.4, v_v));
   float difusa = max(dot(N, L), 0.0) * 0.6 + 0.4;  // luz envolvente: la hoja es fina
@@ -48,6 +50,9 @@ void main() {
   vec3 color = base * (u_ambiente + luzSol * difusa * 0.55) * ao + luzSol * base * trans;
   // donde pasa la ráfaga las puntas dobladas agarran la luz: así se ve el viento sobre un pastizal
   color += luzSol * base * smoothstep(0.12, 0.55, v_viento) * v_v * v_v * 0.4;
+  // escarcha: las puntas se blanquean, más en unas manchas que en otras
+  float helada = u_escarcha * smoothstep(0.5, 1.0, v_v) * (0.55 + 0.45 * mancha);
+  color = mix(color, vec3(0.9, 0.92, 0.92) * (0.78 + 0.3 * difusa), helada * 0.8);
   color = mix(color, u_bruma, 1.0 - exp(-v_prof * u_densidadBruma));
 
   if (u_vista == 3) color = vec3(clamp(0.5 + v_viento, 0.0, 1.0));

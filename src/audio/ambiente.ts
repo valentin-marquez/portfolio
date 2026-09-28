@@ -1,5 +1,5 @@
-// Ambiente generativo: viento de ruido rosa filtrado que sigue a las ráfagas, un dron grave casi
-// imperceptible y una reverberación larga que los envuelve. Todo es suave y entra con un fundido
+// Ambiente generativo: viento de ruido rosa filtrado que sigue a las ráfagas, lluvia cuando llueve
+// donde está el visitante, un dron grave casi imperceptible y una reverberación larga que los envuelve. Todo es suave y entra con un fundido
 // largo; nada suena de golpe. El paneo sigue al frente de la ola: el sonido cruza con el pasto.
 import { crearAzar } from "@/prado/azar";
 import type { MotorSonido } from "./control";
@@ -82,6 +82,22 @@ export function crearMotorSonido(
   profundidadLfo.gain.value = 50;
   lfo.connect(profundidadLfo).connect(banda.frequency);
 
+  // lluvia: el mismo ruido, desde otro punto del bucle y filtrado arriba: un siseo parejo y suave
+  const fuenteLluvia = ctx.createBufferSource();
+  fuenteLluvia.buffer = buffer;
+  fuenteLluvia.loop = true;
+  const altoLluvia = ctx.createBiquadFilter();
+  altoLluvia.type = "highpass";
+  altoLluvia.frequency.value = 900;
+  const bajoLluvia = ctx.createBiquadFilter();
+  bajoLluvia.type = "lowpass";
+  bajoLluvia.frequency.value = 5200;
+  const gananciaLluvia = ctx.createGain();
+  gananciaLluvia.gain.value = 0;
+  fuenteLluvia.connect(altoLluvia).connect(bajoLluvia).connect(gananciaLluvia);
+  gananciaLluvia.connect(maestro);
+  gananciaLluvia.connect(reverb);
+
   // dron: tres senos graves, apenas un colchón que también pasa por la reverberación
   const dron = ctx.createGain();
   dron.gain.value = 0.008;
@@ -106,6 +122,7 @@ export function crearMotorSonido(
     arrancar(s) {
       silenciado = s;
       ruido.start();
+      fuenteLluvia.start(0, 3.7);
       lfo.start();
       for (const o of osciladores) o.start();
       ctx.resume().catch(ignorar);
@@ -119,6 +136,10 @@ export function crearMotorSonido(
       gananciaViento.gain.setTargetAtTime(s.ganancia, t, 1.6);
       banda.frequency.setTargetAtTime(s.frecuencia, t, 1.6);
       paneo.pan.setTargetAtTime(s.paneo, t, 0.9);
+    },
+    fijarLluvia(intensidad) {
+      // entra y se va despacio, como un chaparrón que llega
+      gananciaLluvia.gain.setTargetAtTime(0.07 * limitar(intensidad, 0, 1), ctx.currentTime, 2);
     },
     soplo(p) {
       // un soplo: el mismo ruido rosa, filtrado más arriba, con subida rápida y cola larga

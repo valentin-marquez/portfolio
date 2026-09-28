@@ -8,10 +8,14 @@ import dienteVert from "./shaders/diente.vert?raw";
 import dofFrag from "./shaders/dof.frag?raw";
 import hoja from "./shaders/hoja.glsl?raw";
 import pantallaVert from "./shaders/pantalla.vert?raw";
+import particulaFrag from "./shaders/particula.frag?raw";
+import particulaVert from "./shaders/particula.vert?raw";
 import pastoFrag from "./shaders/pasto.frag?raw";
 import pastoVert from "./shaders/pasto.vert?raw";
 import semillaFrag from "./shaders/semilla.frag?raw";
 import semillaVert from "./shaders/semilla.vert?raw";
+import voladorFrag from "./shaders/volador.frag?raw";
+import voladorVert from "./shaders/volador.vert?raw";
 
 const conHoja = CABECERA + comun + hoja;
 
@@ -22,4 +26,6 @@ export const FUENTES = {
   dof: { vert: CABECERA + pantallaVert, frag: CABECERA + dofFrag },
   composicion: { vert: CABECERA + pantallaVert, frag: CABECERA + comun + composicionFrag },
   semilla: { vert: CABECERA + semillaVert, frag: CABECERA + semillaFrag },
+  particula: { vert: CABECERA + particulaVert, frag: CABECERA + particulaFrag },
+  volador: { vert: CABECERA + voladorVert, frag: CABECERA + voladorFrag },
 } satisfies Record<string, { vert: string; frag: string }>;

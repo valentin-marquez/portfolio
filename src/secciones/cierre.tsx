@@ -15,6 +15,9 @@ const FLOR: Diente[] = [{ x: 0.4, z: -2.8, altura: 0.78 }];
 const DISTANCIA_FLOR = Math.hypot(0.4, 2.8);
 // foco poco profundo sobre la flor: el pasto de adelante y de atrás se desenfoca, como de cerca
 const FOCO = { distancia: DISTANCIA_FLOR, rango: 1.5, radioMax: 14, respiracion: 0.12 };
+// de cerca caben menos: un par de mariposas que buscan la flor y unas pocas hojas, todas cerca del
+// plano de foco (fuera de él el desenfoque las borraría)
+const VOLADORES = { mariposas: 2, hojas: 4, cerca: 2, lejos: 3.8 };
 // cámara baja y lente más cerrado, a la altura de la flor
 const camaraFlor = (base: Parametros["camara"]): Parametros["camara"] => ({
   ...base,
@@ -32,6 +35,7 @@ export function Cierre() {
         semilla={2}
         foco={FOCO}
         radioCabeza={0.14}
+        voladores={VOLADORES}
         alMontar={alMontar}
         ajustarCamara={camaraFlor}
       />

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { type Almacen, cargarClimaDelVisitante, climaDesdeViento } from "./clima";
+import {
+  type Almacen,
+  cargarClimaDelVisitante,
+  climaDesdeViento,
+  DESPEJADO,
+  estacionEn,
+  latitudProbable,
+  tiempoDesdeMeteo,
+} from "./clima";
 
 describe("climaDesdeViento", () => {
   it("con calma, ráfagas espaciadas y suaves", () => {
@@ -40,7 +48,16 @@ describe("climaDesdeViento", () => {
 type Respuesta = { ok: boolean; json(): Promise<unknown> };
 const respuesta = (datos: unknown, ok = true): Respuesta => ({ ok, json: async () => datos });
 const GEO = { latitude: "-33.4521", longitude: "-70.6536", city: "Santiago" };
-const METEO = { current: { wind_speed_10m: 12.4, wind_gusts_10m: 25.1, wind_direction_10m: 280 } };
+const METEO = {
+  current: {
+    wind_speed_10m: 12.4,
+    wind_gusts_10m: 25.1,
+    wind_direction_10m: 280,
+    weather_code: 63,
+    cloud_cover: 100,
+    precipitation: 1.2,
+  },
+};
 
 function almacenEnMemoria(): Almacen & { datos: Map<string, string> } {
   const datos = new Map<string, string>();
@@ -67,7 +84,18 @@ describe("cargarClimaDelVisitante", () => {
       almacen: almacenEnMemoria(),
       ahora: () => 0,
     });
-    expect(c).toEqual(climaDesdeViento({ velocidad: 12.4, rafagas: 25.1, direccion: 280 }));
+    expect(c?.viento).toEqual(climaDesdeViento({ velocidad: 12.4, rafagas: 25.1, direccion: 280 }));
+    expect(c?.tiempo.lluvia).toBe(0.75);
+    expect(c?.latitud).toBeCloseTo(-33.45);
+  });
+
+  it("sin datos del cielo igual trae el viento, con el día despejado", async () => {
+    const soloViento = {
+      current: { wind_speed_10m: 5, wind_gusts_10m: 8, wind_direction_10m: 90 },
+    };
+    const f = fetchFalso({ meteo: async () => respuesta(soloViento) });
+    const c = await cargarClimaDelVisitante({ fetch: f.fetch, almacen: null, ahora: () => 0 });
+    expect(c?.tiempo).toEqual(DESPEJADO);
   });
 
   it("al servicio del viento solo le llegan coordenadas redondeadas a ~11 km", async () => {
@@ -144,5 +172,53 @@ describe("cargarClimaDelVisitante", () => {
     expect(
       await cargarClimaDelVisitante({ fetch: f.fetch, almacen: lanza, ahora: () => 0 }),
     ).not.toBeNull();
+  });
+});
+
+describe("tiempoDesdeMeteo", () => {
+  it("despejado con poca nubosidad", () => {
+    const t = tiempoDesdeMeteo({ codigo: 0, nubosidad: 8 });
+    expect(t.nubes).toBeCloseTo(0.08);
+    expect(t.lluvia + t.nieve + t.niebla + t.tormenta).toBe(0);
+  });
+
+  it("si llueve o nieva, el cielo está cubierto aunque la nubosidad diga otra cosa", () => {
+    expect(tiempoDesdeMeteo({ codigo: 61, nubosidad: 30 }).nubes).toBeGreaterThanOrEqual(0.85);
+    expect(tiempoDesdeMeteo({ codigo: 73 }).nieve).toBe(0.7);
+  });
+
+  it("tormenta es lluvia fuerte con relámpagos; niebla es niebla", () => {
+    const t = tiempoDesdeMeteo({ codigo: 95 });
+    expect(t.tormenta).toBe(1);
+    expect(t.lluvia).toBeGreaterThan(0.8);
+    expect(tiempoDesdeMeteo({ codigo: 45 }).niebla).toBe(1);
+  });
+
+  it("un código desconocido o ausente usa la nubosidad, y sin nada queda despejado", () => {
+    expect(tiempoDesdeMeteo({ codigo: 12345, nubosidad: 60 }).nubes).toBeCloseTo(0.6);
+    expect(tiempoDesdeMeteo({})).toEqual(DESPEJADO);
+    expect(tiempoDesdeMeteo({ precipitacion: 2 }).lluvia).toBeCloseTo(0.5);
+  });
+});
+
+describe("estación", () => {
+  it("en septiembre es primavera en Santiago y otoño en Madrid", () => {
+    const fecha = new Date(2026, 8, 28);
+    expect(estacionEn(fecha, -33.4)).toBe("primavera");
+    expect(estacionEn(fecha, 40.4)).toBe("otono");
+  });
+
+  it("enero es verano en el sur e invierno en el norte", () => {
+    const enero = new Date(2026, 0, 15);
+    expect(estacionEn(enero, -33)).toBe("verano");
+    expect(estacionEn(enero, 48)).toBe("invierno");
+  });
+
+  it("sin ubicación, el horario de verano delata el hemisferio; sin cambio de hora, el sur", () => {
+    // Madrid: UTC+1 en enero (−60) y UTC+2 en julio (−120)
+    expect(latitudProbable(-60, -120)).toBeGreaterThan(0);
+    // Santiago: UTC−3 en enero (180) y UTC−4 en julio (240)
+    expect(latitudProbable(180, 240)).toBeLessThan(0);
+    expect(latitudProbable(300, 300)).toBeLessThan(0);
   });
 });

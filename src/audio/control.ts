@@ -8,6 +8,8 @@ export interface MotorSonido {
   arrancar(silenciado: boolean): void;
   /** intensidad 0..1 y frente de la ola (x de pantalla 0..1) para el paneo */
   fijarViento(intensidad: number, frente: number): void;
+  /** cuánto llueve donde está el visitante, 0..1 */
+  fijarLluvia(intensidad: number): void;
   fijarSilencio(silenciado: boolean): void;
   suspender(): void;
   reanudar(): void;
@@ -59,6 +61,8 @@ export function crearControlAudio(dep: {
   let frente = 0.5;
   let vientoEnviado = Number.NaN;
   let frenteEnviado = Number.NaN;
+  let lluvia = 0;
+  let lluviaEnviada = Number.NaN;
 
   const enviarViento = () => {
     if (!motor) return;
@@ -81,6 +85,8 @@ export function crearControlAudio(dep: {
     if (!motor) return;
     motor.arrancar(silenciado);
     enviarViento();
+    motor.fijarLluvia(lluvia);
+    lluviaEnviada = lluvia;
     if (dep.documento.hidden) motor.suspender();
   };
 
@@ -121,6 +127,12 @@ export function crearControlAudio(dep: {
         Math.abs(viento - vientoEnviado) >= UMBRAL_VIENTO ||
         Math.abs(frente - frenteEnviado) >= UMBRAL_FRENTE;
       if (cambio) enviarViento();
+    },
+    fijarLluvia(intensidad: number) {
+      lluvia = intensidad;
+      if (!motor || Math.abs(lluvia - lluviaEnviada) < UMBRAL_VIENTO) return;
+      motor.fijarLluvia(lluvia);
+      lluviaEnviada = lluvia;
     },
     soplo(paneo: number) {
       motor?.soplo(Math.max(-1, Math.min(1, paneo)));

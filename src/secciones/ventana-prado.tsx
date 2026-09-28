@@ -18,6 +18,8 @@ interface Props {
   foco?: Partial<Parametros["foco"]>;
   /** radio de las cabezas en esta ventana (m) */
   radioCabeza?: number;
+  /** cuántas mariposas y hojas caben como máximo en esta ventana, y entre qué distancias vuelan */
+  voladores?: { mariposas: number; hojas: number; cerca?: number; lejos?: number };
   /** avisa el prado montado (o null al desmontar) y el elemento de la ventana */
   alMontar: (prado: Prado | null, elemento: HTMLDivElement | null) => void;
   /** cada cuadro la página puede mover la cámara, por ejemplo según el scroll */
@@ -35,6 +37,7 @@ export function VentanaPrado({
   semilla,
   foco,
   radioCabeza,
+  voladores,
   alMontar,
   ajustarCamara,
 }: Props) {
@@ -60,6 +63,7 @@ export function VentanaPrado({
         dientes,
         foco,
         radioCabeza,
+        voladores,
         parametros: escena.parametros,
         calidad: elegirCalidad({
           anchoCss: window.innerWidth,
@@ -110,7 +114,7 @@ export function VentanaPrado({
       alMontar(null, null);
       montado.destruir();
     };
-  }, [dientes, semilla, foco, radioCabeza, alMontar]);
+  }, [dientes, semilla, foco, radioCabeza, voladores, alMontar]);
 
   return (
     <div

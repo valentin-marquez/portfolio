@@ -1,6 +1,8 @@
 // Motor del prado: WebGL2 escrito a mano, sin React. Dibuja cielo, pasto y dientes de león en un
 // objetivo con MSAA y dos salidas (color + profundidad) y compone el resultado en el canvas con los
 // bordes disueltos. React solo lo monta y le pasa el scroll y el puntero.
+import { aplicarAtmosfera, atmosferaEn, copiarParametros, type Efectos } from "./atmosfera";
+import { crearAzar } from "./azar";
 import { estadoCabeza } from "./cabezas";
 import type { Calidad } from "./calidad";
 import {
@@ -27,7 +29,14 @@ import {
   mallaHoja,
 } from "./pasto";
 import { actualizarRastro, crearRastro, uniformeRastro } from "./rastro";
-import { influenciaScroll, type Rafaga, rafaga } from "./viento";
+import { influenciaScroll, type Rafaga, rafaga, sentidoActual } from "./viento";
+import {
+  avanzarEnjambre,
+  crearEnjambre,
+  escribirInstancias,
+  FLOTANTES_POR_VOLADOR,
+  MAX_VOLADORES,
+} from "./voladores";
 
 export interface OpcionesPrado {
   semilla: number;
@@ -37,6 +46,8 @@ export interface OpcionesPrado {
   foco?: Partial<Parametros["foco"]>;
   /** radio de las cabezas en esta ventana (m) */
   radioCabeza?: number;
+  /** cuántas mariposas y hojas caben como máximo en esta ventana, y entre qué distancias vuelan */
+  voladores?: { mariposas: number; hojas: number; cerca?: number; lejos?: number };
   /** compartido y mutable: el panel de depuración lo cambia en vivo */
   parametros: Parametros;
   calidad: Calidad;
@@ -115,7 +126,17 @@ interface EstadoCuadro {
   ancho: number;
   alto: number;
   dpr: number;
+  fov: number;
+  /** lo que el clima agrega en este cuadro */
+  efectos: Efectos;
+  /** mariposas y hojas: cuántas hay y sus instancias ya escritas */
+  voladores: number;
+  datosVoladores: Float32Array;
 }
+
+/** tope de partículas de lluvia o nieve; la calidad lo achica */
+const MAX_PARTICULAS = 4200;
+const MAX_MOTAS = 320;
 
 function crearVaoInstancias(
   gl: WebGL2RenderingContext,
@@ -151,19 +172,98 @@ function crearVaoInstancias(
   };
 }
 
+/** Un cuadrilátero por partícula; cada una con su lugar en la caja (0..1) y un azar propio. */
+function crearVaoParticulas(gl: WebGL2RenderingContext, cantidad: number, semilla: number) {
+  const azar = crearAzar(semilla * 31 + 5);
+  const semillas = new Float32Array(cantidad * 4);
+  for (let i = 0; i < semillas.length; i++) semillas[i] = azar();
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  const bBase = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, bBase);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const bInst = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, bInst);
+  gl.bufferData(gl.ARRAY_BUFFER, semillas, gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(1);
+  gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribDivisor(1, 1);
+  gl.bindVertexArray(null);
+  return {
+    vao,
+    cantidad,
+    destruir() {
+      gl.deleteBuffer(bBase);
+      gl.deleteBuffer(bInst);
+      gl.deleteVertexArray(vao);
+    },
+  };
+}
+
+/** Dos alas (dos cuadriláteros que nacen del eje del cuerpo) y las instancias que la CPU reescribe. */
+function crearVaoVoladores(gl: WebGL2RenderingContext) {
+  const malla: number[] = [];
+  for (const lado of [-1, 1]) {
+    // u (0 en el cuerpo, 1 en la punta), v (-1 atrás, 1 adelante)
+    const q = [
+      [0, -1],
+      [1, -1],
+      [0, 1],
+      [0, 1],
+      [1, -1],
+      [1, 1],
+    ];
+    for (const [u, v] of q) malla.push(u as number, v as number, lado);
+  }
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  const bBase = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, bBase);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(malla), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+  const bInst = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, bInst);
+  gl.bufferData(gl.ARRAY_BUFFER, MAX_VOLADORES * FLOTANTES_POR_VOLADOR * 4, gl.DYNAMIC_DRAW);
+  const paso = FLOTANTES_POR_VOLADOR * 4;
+  for (let k = 0; k < 3; k++) {
+    gl.enableVertexAttribArray(1 + k);
+    gl.vertexAttribPointer(1 + k, 4, gl.FLOAT, false, paso, k * 16);
+    gl.vertexAttribDivisor(1 + k, 1);
+  }
+  gl.bindVertexArray(null);
+  return {
+    vao,
+    subir(datos: Float32Array, n: number) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, bInst);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, datos, 0, n * FLOTANTES_POR_VOLADOR);
+    },
+    destruir() {
+      gl.deleteBuffer(bBase);
+      gl.deleteBuffer(bInst);
+      gl.deleteVertexArray(vao);
+    },
+  };
+}
+
 function normalizar(v: Vec3): Vec3 {
   const l = Math.hypot(v.x, v.y, v.z) || 1;
   return { x: v.x / l, y: v.y / l, z: v.z / l };
 }
 
 function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: number) {
-  const p = op.parametros;
+  // lo que se dibuja: los parámetros de la página vestidos con la atmósfera de cada cuadro
+  const p = copiarParametros(op.parametros);
   const programa = (f: { vert: string; frag: string }) => crearPrograma(gl, f.vert, f.frag);
   const progCielo = programa(FUENTES.cielo);
   const progPasto = programa(FUENTES.pasto);
   const progDiente = programa(FUENTES.diente);
   const progDof = programa(FUENTES.dof);
   const progComp = programa(FUENTES.composicion);
+  const progParticula = programa(FUENTES.particula);
+  const progVolador = programa(FUENTES.volador);
   const uCielo = ubicaciones(gl, progCielo, [
     "u_inversa",
     "u_camara",
@@ -175,6 +275,8 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     "u_densidadBruma",
     "u_tonoSuelo",
     "u_nubes",
+    "u_nubosidad",
+    "u_destello",
   ] as const);
   const uPasto = ubicaciones(gl, progPasto, [
     ...NOMBRES_HOJA,
@@ -190,6 +292,8 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     "u_densidadBruma",
     "u_vista",
     "u_nubes",
+    "u_nubosidad",
+    "u_escarcha",
   ] as const);
   const uDiente = ubicaciones(gl, progDiente, [
     ...NOMBRES_HOJA,
@@ -209,6 +313,31 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     "u_rango",
     "u_radioMax",
     "u_muestras",
+  ] as const);
+  const uParticula = ubicaciones(gl, progParticula, [
+    "u_vistaProy",
+    "u_camara",
+    "u_tiempo",
+    "u_modo",
+    "u_deriva",
+    "u_tanMedio",
+    "u_aspecto",
+    "u_altoPx",
+    "u_opacidad",
+    "u_sol",
+    "u_colorSol",
+    "u_colorMotas",
+    "u_bruma",
+    "u_densidadBruma",
+  ] as const);
+  const uVolador = ubicaciones(gl, progVolador, [
+    "u_vistaProy",
+    "u_camara",
+    "u_sol",
+    "u_colorSol",
+    "u_ambiente",
+    "u_bruma",
+    "u_densidadBruma",
   ] as const);
   const uComp = ubicaciones(gl, progComp, [
     "u_dof",
@@ -241,6 +370,9 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
     datosTallos,
   );
+  const maxParticulas = Math.round(MAX_PARTICULAS * Math.min(1, op.calidad.hojas / 60000 + 0.3));
+  const particulas = crearVaoParticulas(gl, maxParticulas, op.semilla);
+  const voladores = crearVaoVoladores(gl);
   const escena = crearObjetivoEscena(gl, op.calidad.msaa);
   const desenfoque = crearObjetivoSimple(gl);
   const triangulo = crearTriangulo(gl);
@@ -288,6 +420,8 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     gl.uniform1f(uCielo.u_densidadBruma, p.bruma.densidad);
     c3(uCielo.u_tonoSuelo, p.pasto.tonoSuelo);
     gl.uniform2f(uCielo.u_nubes, ...nubes);
+    gl.uniform1f(uCielo.u_nubosidad, e.efectos.nubosidad);
+    gl.uniform1f(uCielo.u_destello, e.efectos.destello);
     triangulo.dibujar();
 
     // pasto y tallos
@@ -307,6 +441,8 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     gl.uniform1f(uPasto.u_densidadBruma, p.bruma.densidad);
     gl.uniform1i(uPasto.u_vista, p.vista);
     gl.uniform2f(uPasto.u_nubes, ...nubes);
+    gl.uniform1f(uPasto.u_nubosidad, e.efectos.nubosidad);
+    gl.uniform1f(uPasto.u_escarcha, e.efectos.escarcha);
     gl.bindVertexArray(pasto.vao);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, verticesHoja, pasto.cantidad);
     gl.bindVertexArray(tallos.vao);
@@ -327,6 +463,55 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.bindVertexArray(cabezas.vao);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, cabezas.cantidad);
+
+    // mariposas y hojas: como las cabezas, translúcidas en el borde y con su propia profundidad
+    if (e.voladores > 0) {
+      usar(progVolador);
+      gl.uniformMatrix4fv(uVolador.u_vistaProy, false, e.vp);
+      v3(uVolador.u_camara, e.ojo);
+      v3(uVolador.u_sol, sol);
+      c3(uVolador.u_colorSol, p.luz.colorSol);
+      c3(uVolador.u_ambiente, p.luz.ambiente);
+      c3(uVolador.u_bruma, p.bruma.color);
+      gl.uniform1f(uVolador.u_densidadBruma, p.bruma.densidad);
+      voladores.subir(e.datosVoladores, e.voladores);
+      gl.bindVertexArray(voladores.vao);
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, 12, e.voladores);
+    }
+
+    // lo que cae o flota: detrás del pasto se esconde, pero no tapa a nadie en la profundidad
+    const lluvia = Math.round(particulas.cantidad * 0.5 * e.efectos.lluvia);
+    const nieve = Math.round(particulas.cantidad * 0.7 * e.efectos.nieve);
+    const motas = Math.round(Math.min(MAX_MOTAS, particulas.cantidad) * e.efectos.motas);
+    if (lluvia + nieve + motas > 0) {
+      gl.depthMask(false);
+      usar(progParticula);
+      gl.uniformMatrix4fv(uParticula.u_vistaProy, false, e.vp);
+      v3(uParticula.u_camara, e.ojo);
+      gl.uniform1f(uParticula.u_tiempo, e.tiempo);
+      gl.uniform1f(uParticula.u_deriva, sentidoActual() * (0.5 + e.rafaga.fuerza * 3));
+      gl.uniform1f(uParticula.u_tanMedio, Math.tan((e.fov * Math.PI) / 360));
+      gl.uniform1f(uParticula.u_aspecto, e.ancho / e.alto);
+      gl.uniform1f(uParticula.u_altoPx, e.alto);
+      v3(uParticula.u_sol, sol);
+      c3(uParticula.u_colorSol, p.luz.colorSol);
+      c3(uParticula.u_colorMotas, e.efectos.colorMotas);
+      c3(uParticula.u_bruma, p.bruma.color);
+      gl.uniform1f(uParticula.u_densidadBruma, p.bruma.densidad);
+      gl.bindVertexArray(particulas.vao);
+      const tandas: Array<[number, number, number]> = [
+        [2, motas, 1],
+        [0, lluvia, Math.min(1, 0.55 + e.efectos.lluvia)],
+        [1, nieve, 1],
+      ];
+      for (const [modo, cantidad, opacidad] of tandas) {
+        if (cantidad <= 0) continue;
+        gl.uniform1i(uParticula.u_modo, modo);
+        gl.uniform1f(uParticula.u_opacidad, opacidad);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, cantidad);
+      }
+      gl.depthMask(true);
+    }
 
     gl.bindVertexArray(null);
     gl.disable(gl.BLEND);
@@ -376,6 +561,8 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
 
   return {
     dientes,
+    /** los parámetros vestidos que se dibujan; el motor los rellena cada cuadro */
+    parametros: p,
     dibujar(e: EstadoCuadro) {
       // el foco respira apenas, y se abre un poco con cada ráfaga
       const f = focoActual();
@@ -391,8 +578,26 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
       desenfoque.redimensionar(ancho, alto);
     },
     destruir() {
-      for (const r of [pasto, tallos, cabezas, escena, desenfoque, triangulo]) r.destruir();
-      for (const prog of [progCielo, progPasto, progDiente, progDof, progComp])
+      for (const r of [
+        pasto,
+        tallos,
+        cabezas,
+        particulas,
+        voladores,
+        escena,
+        desenfoque,
+        triangulo,
+      ])
+        r.destruir();
+      for (const prog of [
+        progCielo,
+        progPasto,
+        progDiente,
+        progDof,
+        progComp,
+        progParticula,
+        progVolador,
+      ])
         gl.deleteProgram(prog);
     },
   };
@@ -434,6 +639,15 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
   let ahoraS = 0;
   const deshecho = new Float32Array(MAX_CABEZAS);
   const desprendidas = new Float32Array(MAX_CABEZAS);
+  // mariposas y hojas: viven en la CPU, así sobreviven a una pérdida del contexto
+  const enjambre = crearEnjambre(op.semilla);
+  const datosVoladores = new Float32Array(MAX_VOLADORES * FLOTANTES_POR_VOLADOR);
+  const maxVoladores = op.voladores ?? { mariposas: 3, hojas: 7 };
+  const radioCabeza = op.radioCabeza ?? p.diente.radioCabeza;
+  // una mariposa se posa arriba de la cabeza de un diente de león
+  const floresDe = (r: Recursos) =>
+    r.dientes.map((d) => ({ x: d.x, y: d.altura * 0.97 + radioCabeza * 0.9, z: d.z }));
+  let flores = recursos ? floresDe(recursos) : [];
 
   function fallar(error: unknown) {
     console.error(error);
@@ -494,12 +708,38 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
       fuerzaPuntero += ((tocado ? 1 : 0) - fuerzaPuntero) * (1 - Math.exp(-dt * tasaPuntero));
       const radioQuieto = 0.35 + 0.035 * Math.hypot(bajoCursor.x, bajoCursor.z);
 
+      // la atmósfera del visitante viste los parámetros de este cuadro
+      const atmosfera = atmosferaEn(ahoraS);
+      const efectos = aplicarAtmosfera(p, atmosfera, ahoraS, recursos.parametros);
+      const ola = rafagaDelPrado(ahora);
+      const tanMedio = Math.tan((camara.fov * Math.PI) / 360);
+      avanzarEnjambre(enjambre, {
+        dt: dt * movimiento,
+        rafaga: ola.fuerza,
+        sentido: sentidoActual(),
+        flores,
+        puntero: tocado,
+        vista: {
+          x: ojo.x,
+          y: ojo.y,
+          z: ojo.z,
+          medioAncho: tanMedio * (ancho / alto),
+          cerca: maxVoladores.cerca,
+          lejos: maxVoladores.lejos,
+        },
+        mariposas: efectos.mariposas * maxVoladores.mariposas,
+        hojas: efectos.hojas * maxVoladores.hojas,
+        // primavera: blancas, amarillas y azulitas; verano: damas pintadas y amarillas
+        especies:
+          atmosfera.estacion.verano > atmosfera.estacion.primavera ? [2, 2, 1, 0] : [0, 0, 1, 3],
+      });
+
       recursos.dibujar({
         vp,
         inversa,
         ojo,
         tiempo,
-        rafaga: rafagaDelPrado(ahora),
+        rafaga: ola,
         extra,
         puntero: [bajoCursor.x, bajoCursor.z, radioQuieto, fuerzaPuntero],
         rastro: uniformeRastro(rastro),
@@ -508,6 +748,10 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
         ancho,
         alto,
         dpr,
+        fov: camara.fov,
+        efectos,
+        voladores: escribirInstancias(enjambre, datosVoladores),
+        datosVoladores,
       });
     } catch (error) {
       fallar(error);
@@ -561,6 +805,7 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
     }
     try {
       recursos = crearRecursos(gl, op, aspectoActual());
+      flores = floresDe(recursos);
     } catch (error) {
       fallar(error);
       return;

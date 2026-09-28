@@ -10,6 +10,7 @@ function motorFalso(sonandoAlArrancar = true) {
       sonando = sonandoAlArrancar;
     },
     fijarViento: (i, frente) => llamadas.push(`viento:${i.toFixed(2)}@${frente.toFixed(2)}`),
+    fijarLluvia: (i) => llamadas.push(`lluvia:${i.toFixed(2)}`),
     fijarSilencio: (s) => llamadas.push(`silencio:${s}`),
     suspender: () => llamadas.push("suspender"),
     reanudar: () => {
@@ -65,11 +66,23 @@ describe("crearControlAudio", () => {
     expect(m.creados()).toBe(0);
   });
 
-  it("arranca con el primer gesto y aplica el viento que ya se había pedido", () => {
+  it("arranca con el primer gesto y aplica el viento y la lluvia que ya se habían pedido", () => {
     const m = montar();
     m.control.fijarViento(0.5);
+    m.control.fijarLluvia(0.7);
     m.ventana.dispatchEvent(new Event("pointerdown"));
-    expect(m.llamadas).toEqual(["arrancar:false", "viento:0.50@0.50"]);
+    expect(m.llamadas).toEqual(["arrancar:false", "viento:0.50@0.50", "lluvia:0.70"]);
+  });
+
+  it("la lluvia solo se manda cuando cambia de verdad", () => {
+    const m = montar();
+    m.ventana.dispatchEvent(new Event("pointerdown"));
+    m.control.fijarLluvia(0.001);
+    m.control.fijarLluvia(0.5);
+    expect(m.llamadas.filter((l) => l.startsWith("lluvia"))).toEqual([
+      "lluvia:0.00",
+      "lluvia:0.50",
+    ]);
   });
 
   it("un segundo gesto no crea otro motor", () => {

@@ -1,8 +1,17 @@
 import { useEffect } from "react";
 import { crearMotorSonido } from "./audio/ambiente";
 import { type Almacen, crearControlAudio } from "./audio/control";
-import { cargarClimaDelVisitante } from "./clima/clima";
+import {
+  cargarClimaDelVisitante,
+  DESPEJADO,
+  ESTACIONES,
+  type Estacion,
+  estacionEn,
+  latitudProbable,
+  TIEMPOS,
+} from "./clima/clima";
 import { calcularProgreso, escena, vientoDelLatido } from "./estado/escena";
+import { atmosferaDe, atmosferaEn, fijarAtmosfera } from "./prado/atmosfera";
 import { pasoTiempo, rafagaDelPrado } from "./prado/motor";
 import { fijarClima, influenciaScroll } from "./prado/viento";
 import { BordeDifuso } from "./secciones/borde-difuso";
@@ -35,6 +44,26 @@ function almacenDeSesion(): Almacen | null {
 // el viento real se pide una sola vez por carga (StrictMode monta los efectos dos veces en desarrollo)
 let climaPedido = false;
 
+/** ?tiempo=lluvia y ?estacion=otono muestran el prado así, sin importar el tiempo real */
+function pedidoEnLaUrl() {
+  const q = new URLSearchParams(window.location.search);
+  const tiempo = TIEMPOS[q.get("tiempo") ?? ""];
+  const estacion = q.get("estacion");
+  return {
+    tiempo,
+    estacion: ESTACIONES.includes(estacion as Estacion) ? (estacion as Estacion) : undefined,
+  };
+}
+
+/** mientras llega la ubicación: el hemisferio que delata el horario de verano del navegador */
+function latitudSinUbicacion(): number {
+  const anio = new Date().getFullYear();
+  return latitudProbable(
+    new Date(anio, 0, 1).getTimezoneOffset(),
+    new Date(anio, 6, 1).getTimezoneOffset(),
+  );
+}
+
 export function App() {
   useEffect(() => {
     // scroll → progreso y velocidad; los prados reciben la velocidad y la acotan ellos mismos
@@ -57,15 +86,36 @@ export function App() {
     window.addEventListener("scroll", alScroll, { passive: true });
     alScroll();
 
-    // el viento real de la zona del visitante marca el ritmo; si no llega, sigue la brisa por defecto
+    // el tiempo real de la zona del visitante: su viento marca el ritmo y su cielo viste el prado;
+    // si no llega, sigue la brisa por defecto en un día despejado de la estación que corresponda
     if (!climaPedido) {
       climaPedido = true;
+      const pedido = pedidoEnLaUrl();
+      fijarAtmosfera(
+        atmosferaDe(
+          pedido.tiempo ?? DESPEJADO,
+          pedido.estacion ?? estacionEn(new Date(), latitudSinUbicacion()),
+        ),
+        performance.now() / 1000,
+        0,
+      );
       void cargarClimaDelVisitante({
         fetch: window.fetch.bind(window),
         almacen: almacenDeSesion(),
         ahora: () => Date.now(),
-      }).then((clima) => {
-        if (clima) fijarClima(clima, performance.now() / 1000);
+      }).then((lectura) => {
+        if (!lectura) return;
+        const t = performance.now() / 1000;
+        fijarClima(lectura.viento, t);
+        // el cielo real entra de a poco: se nubla o empieza a llover en unos segundos
+        fijarAtmosfera(
+          atmosferaDe(
+            pedido.tiempo ?? lectura.tiempo,
+            pedido.estacion ?? estacionEn(new Date(), lectura.latitud),
+          ),
+          t,
+          6,
+        );
       });
     }
 
@@ -94,6 +144,7 @@ export function App() {
       escena.viento = vientoDelLatido(ahora, influencia);
       // el sonido cruza con la ola: mismo frente que ve el pasto
       audio.fijarViento(escena.viento, rafagaDelPrado(ahora).frente);
+      audio.fijarLluvia(atmosferaEn(ahora / 1000).tiempo.lluvia);
       raf = requestAnimationFrame(latido);
     };
     raf = requestAnimationFrame(latido);
