@@ -7,6 +7,3 @@ docs/superpowers/
 .superpowers/
 .playwright-mcp/
 
-# renders y audio intermedio de las herramientas: se regeneran con sus scripts
-herramientas/*/salida/
-__pycache__/

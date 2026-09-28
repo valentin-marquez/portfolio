@@ -8,7 +8,6 @@ import { escena } from "@/estado/escena";
 import type { Prado } from "@/prado/motor";
 import type { Parametros } from "@/prado/parametros";
 import { Aparecer } from "@/secciones/aparecer";
-import { Experimentos } from "@/secciones/experimentos";
 import { RelojSantiago } from "@/secciones/reloj-santiago";
 import { SobreMi } from "@/secciones/sobre-mi";
 import { Titulo } from "@/secciones/titulo";
@@ -95,7 +94,6 @@ export function VarianteUno() {
             </p>
           </Aparecer>
         </section>
-        <Experimentos />
         <SobreMi />
       </div>
 

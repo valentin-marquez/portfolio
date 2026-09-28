@@ -11,7 +11,6 @@ import {
   useTransform,
 } from "motion/react";
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { experimentos } from "@/contenido/experimentos";
 import { escena } from "@/estado/escena";
 import type { Prado } from "@/prado/motor";
 import type { Parametros } from "@/prado/parametros";
@@ -195,12 +194,12 @@ export function Presentacion() {
             </p>
           </Paso>
 
-          {experimentos.map((e, k) => (
-            <Paso key={e.id} indice={2 + k} posicion={posicion} reducir={reducir}>
+          {PASOS.slice(2, 6).map((id, k) => (
+            <Paso key={id} indice={2 + k} posicion={posicion} reducir={reducir}>
               <div className="aspect-[16/10] w-[min(720px,88%)] rounded-[24px] bg-[#efebe1] ring-1 ring-black/[0.03]" />
               <div className="mt-4 flex w-[min(720px,88%)] items-baseline justify-between text-left">
-                <span className="text-enfasis">{e.titulo}</span>
-                <span className="font-mono text-xs text-meta">{e.anio}</span>
+                <span className="text-enfasis">Experimento {k + 1}</span>
+                <span className="font-mono text-xs text-meta">2026</span>
               </div>
               <p className="mt-1 w-[min(720px,88%)] text-left">
                 Una línea sobre qué es y qué explora.

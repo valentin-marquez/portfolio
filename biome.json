@@ -4,9 +4,6 @@
     "includes": [
       "src/**/*.ts",
       "src/**/*.tsx",
-      "herramientas/**/*.mjs",
-      "herramientas/**/*.ts",
-      "!herramientas/*/salida/**",
       "*.ts",
       "*.json"
     ]
@@ -40,7 +37,7 @@
   },
   "overrides": [
     {
-      "includes": ["src/prado/**", "src/audio/**", "src/experimentos/**"],
+      "includes": ["src/prado/**", "src/audio/**"],
       "linter": {
         "rules": {
           "correctness": {

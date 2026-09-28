@@ -6,7 +6,6 @@ import { useEffect, useRef } from "react";
 import { escena } from "@/estado/escena";
 import type { Prado } from "@/prado/motor";
 import { Aparecer } from "@/secciones/aparecer";
-import { Experimentos } from "@/secciones/experimentos";
 import { RelojSantiago } from "@/secciones/reloj-santiago";
 import { SobreMi } from "@/secciones/sobre-mi";
 import { Titulo } from "@/secciones/titulo";
@@ -94,7 +93,6 @@ export function VarianteDos() {
                 </p>
               </Aparecer>
             </section>
-            <Experimentos />
             <SobreMi />
           </div>
           <div
