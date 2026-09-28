@@ -1,14 +1,11 @@
+import { CIELO, DEDAL, HOJA } from "./colores-prado";
 import { ConCalma } from "./con-calma";
 import { Entrada } from "./entrada";
 import { IconoDedalDeOro, IconoHoja, IconoVentana } from "./iconos-prado";
 import { NombreConEdad } from "./nombre-con-edad";
 import { FraseViva, PalabraViva } from "./palabra-viva";
 
-// al pasar el mouse por la frase se encienden sus tres palabras, con un color del prado:
-// cielo, hoja y dedal de oro (AA sobre el fondo)
-const CIELO = "#35709c";
-const HOJA = "#52742e";
-const DEDAL = "#b44f16";
+// al pasar el mouse por la frase se encienden sus tres palabras, cada una con un color del prado
 
 export function Intro() {
   return (

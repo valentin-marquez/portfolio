@@ -11,6 +11,7 @@ import { Cierre } from "./secciones/cierre";
 import { Hero } from "./secciones/hero";
 import { Intro } from "./secciones/intro";
 import { SobreMi } from "./secciones/sobre-mi";
+import { Trabajos } from "./secciones/trabajos";
 import { Presentacion } from "./variantes/cuatro";
 import { VarianteDos } from "./variantes/dos";
 import { VarianteUno } from "./variantes/uno";
@@ -134,6 +135,7 @@ export function App() {
           <main className="relative z-10">
             <Hero />
             <Intro />
+            <Trabajos />
             <SobreMi />
             <Cierre />
           </main>
