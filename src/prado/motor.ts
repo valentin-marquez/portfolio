@@ -27,6 +27,7 @@ import {
   generarHojas,
   instanciasTallos,
   mallaHoja,
+  puntaDiente,
 } from "./pasto";
 import { actualizarRastro, crearRastro, uniformeRastro } from "./rastro";
 import { influenciaScroll, type Rafaga, rafaga, sentidoActual } from "./viento";
@@ -646,7 +647,10 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
   const radioCabeza = op.radioCabeza ?? p.diente.radioCabeza;
   // una mariposa se posa arriba de la cabeza de un diente de león
   const floresDe = (r: Recursos) =>
-    r.dientes.map((d) => ({ x: d.x, y: d.altura * 0.97 + radioCabeza * 0.9, z: d.z }));
+    r.dientes.map((d, i) => {
+      const punta = puntaDiente(d, i);
+      return { ...punta, y: punta.y + radioCabeza * 0.75 };
+    });
   let flores = recursos ? floresDe(recursos) : [];
 
   function fallar(error: unknown) {
@@ -837,9 +841,10 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
       if (!recursos || !vp) return [];
       const r = canvas.getBoundingClientRect();
       const radioCabeza = op.radioCabeza ?? p.diente.radioCabeza;
-      return recursos.dientes.map((d) => {
-        const q = proyectar(vp, { x: d.x, y: d.altura * 0.97, z: d.z });
-        const borde = proyectar(vp, { x: d.x + radioCabeza, y: d.altura * 0.97, z: d.z });
+      return recursos.dientes.map((d, i) => {
+        const punta = puntaDiente(d, i);
+        const q = proyectar(vp, punta);
+        const borde = proyectar(vp, { ...punta, x: punta.x + radioCabeza });
         return {
           x: r.left + (q.x * 0.5 + 0.5) * r.width,
           y: r.top + (0.5 - q.y * 0.5) * r.height,

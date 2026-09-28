@@ -6,6 +6,7 @@ import {
   generarHojas,
   instanciasTallos,
   mallaHoja,
+  puntaDiente,
 } from "./pasto";
 
 const p = crearParametros();
@@ -63,5 +64,17 @@ describe("dientes de león", () => {
     const t = instanciasTallos(d);
     expect(t.length).toBe(5 * FLOTANTES_POR_HOJA);
     expect(t[6]).toBe(2);
+  });
+});
+
+describe("puntaDiente", () => {
+  it("la cabeza queda un poco corrida hacia donde se inclina el tallo, algo más baja que su largo", () => {
+    const d = { x: 1, z: -3, altura: 0.8 };
+    const p = puntaDiente(d, 0);
+    expect(p.y).toBeLessThan(d.altura);
+    expect(p.y).toBeGreaterThan(d.altura * 0.95);
+    const corrimiento = Math.hypot(p.x - d.x, p.z - d.z);
+    expect(corrimiento).toBeGreaterThan(0.05);
+    expect(corrimiento).toBeLessThan(0.15);
   });
 });

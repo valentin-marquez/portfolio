@@ -73,12 +73,26 @@ export function generarDientes(
   return dientes;
 }
 
+const CURVA_TALLO = 0.12;
+const orientacionTallo = (i: number) => (i * 2.4) % (Math.PI * 2);
+
 /** Los tallos usan el mismo programa que el pasto; tono = 2 los marca como tallo. */
 export function instanciasTallos(dientes: Diente[]): Float32Array {
   const datos = new Float32Array(dientes.length * FLOTANTES_POR_HOJA);
   dientes.forEach((d, i) => {
     const o = i * FLOTANTES_POR_HOJA;
-    datos.set([d.x, d.z, d.altura, 0.005, 0.12, (i * 2.4) % (Math.PI * 2), 2, (i * 0.37) % 1], o);
+    datos.set([d.x, d.z, d.altura, 0.005, CURVA_TALLO, orientacionTallo(i), 2, (i * 0.37) % 1], o);
   });
   return datos;
+}
+
+/**
+ * Dónde queda la cabeza del diente de león i sin viento: el tallo se inclina hacia su orientación,
+ * igual que en posicionHoja (hoja.glsl) con v = 1.
+ */
+export function puntaDiente(d: Diente, i: number): { x: number; y: number; z: number } {
+  const a = CURVA_TALLO * 1.1;
+  const lado = d.altura * Math.sin(a) * 0.9;
+  const o = orientacionTallo(i);
+  return { x: d.x + Math.cos(o) * lado, y: d.altura * Math.cos(a), z: d.z + Math.sin(o) * lado };
 }
