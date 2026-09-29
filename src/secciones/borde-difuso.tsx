@@ -1,8 +1,8 @@
 // Blur progresivo en el borde de la pantalla: lo que entra o sale por arriba o por abajo se
 // desenfoca de a poco. Son capas apiladas, cada una más desenfocada y más pegada al borde, más un velo
-// crema muy leve. No captura el puntero. En pantallas táctiles queda una sola capa: cada desenfoque de
-// fondo se recalcula en cada cuadro de scroll y, con la densidad de un teléfono, seis por borde pesan
-// más que todo el prado.
+// crema muy leve. No captura el puntero. En pantallas táctiles queda solo el velo: cada desenfoque de
+// fondo se recalcula en cada cuadro de scroll y, con la densidad y la GPU de un teléfono, frena la
+// página entera.
 const CAPAS = [0.5, 1, 2, 4, 8, 14];
 
 export function BordeDifuso({ lado }: { lado: "arriba" | "abajo" }) {
@@ -31,15 +31,6 @@ export function BordeDifuso({ lado }: { lado: "arriba" | "abajo" }) {
           />
         );
       })}
-      <div
-        className="absolute inset-0 hidden pointer-coarse:block"
-        style={{
-          backdropFilter: "blur(5px)",
-          WebkitBackdropFilter: "blur(5px)",
-          maskImage: `linear-gradient(${hacia}, transparent 20%, #000)`,
-          WebkitMaskImage: `linear-gradient(${hacia}, transparent 20%, #000)`,
-        }}
-      />
       <div
         className="absolute inset-0"
         style={{

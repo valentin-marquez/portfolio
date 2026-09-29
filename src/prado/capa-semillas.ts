@@ -225,7 +225,8 @@ export function montarCapaSemillas(
   let dibujadasAntes = 0;
   // la capa cubre toda la pantalla y el navegador la compone en cada cuadro: en teléfonos (pantallas
   // táctiles de densidad alta) basta 1,5, las semillas son pequeñas y casi siempre desenfocadas
-  const dprMaximo = window.matchMedia?.("(pointer: coarse)").matches ? 1.5 : 2;
+  const tactil = window.matchMedia?.("(pointer: coarse)").matches ?? false;
+  const dprMaximo = tactil ? 1.5 : 2;
 
   function cuadro(ahora: number) {
     raf = requestAnimationFrame(cuadro);
@@ -306,7 +307,8 @@ export function montarCapaSemillas(
     soltar(cabeza, radio) {
       // con movimiento reducido la flor se deshace, pero sus semillas no salen volando
       if (fuente.reducirMovimiento) return;
-      const cantidad = Math.round(Math.min(36, Math.max(12, radio * 0.6)));
+      // en un teléfono la pantalla es angosta y no hay márgenes por donde vuelen: salen la mitad
+      const cantidad = Math.round(Math.min(36, Math.max(12, radio * 0.6)) * (tactil ? 0.5 : 1));
       soltarSemillas(sueltas, cabeza, radio, cantidad, azarSueltas);
     },
     destruir() {

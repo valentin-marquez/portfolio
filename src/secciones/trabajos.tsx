@@ -126,6 +126,8 @@ function Colgado({
       style={{
         rotate: giro,
         transformOrigin: `50% -${CINTA}px`,
+        // en su propia capa: mecerlo es solo componer, no repintar el pase con su sombra y su cinta
+        willChange: "transform",
         visibility: oculto ? "hidden" : undefined,
       }}
     >

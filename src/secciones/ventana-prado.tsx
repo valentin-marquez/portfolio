@@ -104,13 +104,23 @@ export function VentanaPrado({
       montado.soplar(flor.indice);
       for (const reaccion of escena.alSoplar) reaccion(flor.cabeza);
     };
+    // con el mouse se sopla al presionar; con el dedo, solo con un toque quieto: poner el dedo sobre
+    // el prado para hacer scroll no debe soplar las flores que queden bajo él
+    const presionar = (e: PointerEvent) => {
+      if (e.pointerType !== "touch") tocar(e);
+    };
+    const tocarConDedo = (e: MouseEvent) => {
+      if ((e as PointerEvent).pointerType === "touch") tocar(e as PointerEvent);
+    };
     canvas.addEventListener("pointermove", mover);
     canvas.addEventListener("pointerleave", salir);
-    canvas.addEventListener("pointerdown", tocar);
+    canvas.addEventListener("pointerdown", presionar);
+    canvas.addEventListener("click", tocarConDedo);
     return () => {
       canvas.removeEventListener("pointermove", mover);
       canvas.removeEventListener("pointerleave", salir);
-      canvas.removeEventListener("pointerdown", tocar);
+      canvas.removeEventListener("pointerdown", presionar);
+      canvas.removeEventListener("click", tocarConDedo);
       alMontar(null, null);
       montado.destruir();
     };

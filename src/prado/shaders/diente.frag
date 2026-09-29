@@ -35,7 +35,12 @@ void main() {
   // la cabeza es una esfera: muchas semillas apuntan hacia la cámara y sus paraguas llenan el disco,
   // repartidos en capas por dentro; solo se distinguen cuando la cabeza se ve grande
   float interior = 0.0;
+#ifdef LIGERA
+  // en el camino liviano, dos capas de semillas interiores en vez de tres
+  for (int k = 0; k < 2; k++) {
+#else
   for (int k = 0; k < 3; k++) {
+#endif
     float capa = 0.28 + 0.2 * float(k);
     float nk = max(6.0, floor(n * capa * 0.85));
     float gk = a / 6.2831853 * nk + azar(float(k) * 7.3);
