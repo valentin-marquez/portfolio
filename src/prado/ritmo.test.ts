@@ -45,10 +45,16 @@ describe("ritmo del prado", () => {
     expect(simular(90, 10, 10).r.nivel).toBe(0);
   });
 
-  it("uno que no alcanza baja de a un nivel hasta sostener el ritmo, y termina a 30", () => {
+  it("uno que no alcanza baja de a un nivel hasta sostener 30, sin tocar la resolución", () => {
     const { r } = simular(120, 40, 30);
-    expect(r.nivel).toBe(NIVELES.length - 1);
     expect(NIVELES[r.nivel]?.fps).toBe(30);
+    expect(NIVELES[r.nivel]?.escala).toBe(1);
+  });
+
+  it("solo si ni a 30 alcanza, baja un poco la resolución, y nunca de 85 %", () => {
+    const { r } = simular(60, 60, 30);
+    expect(r.nivel).toBe(NIVELES.length - 1);
+    for (const n of NIVELES) expect(n.escala).toBeGreaterThanOrEqual(0.85);
   });
 
   it("los primeros segundos no cuentan: ahí se compilan los shaders", () => {

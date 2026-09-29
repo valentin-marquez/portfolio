@@ -17,7 +17,7 @@ import {
 } from "./camara";
 import { FUENTES } from "./fuentes";
 import { crearObjetivoEscena, crearObjetivoSimple } from "./gl/objetivo";
-import { crearPrograma, ubicaciones } from "./gl/programa";
+import { CABECERA, crearPrograma, ubicaciones } from "./gl/programa";
 import { crearTriangulo } from "./gl/triangulo";
 import type { Color, Parametros } from "./parametros";
 import {
@@ -146,6 +146,9 @@ interface EstadoCuadro {
   voladores: number;
   datosVoladores: Float32Array;
 }
+
+/** hasta dónde llega el pasto en el camino liviano (m); más allá la bruma ya lo cubre casi todo */
+const LEJOS_LIGERA = 35;
 
 /** tope de partículas de lluvia o nieve; la calidad lo achica */
 const MAX_PARTICULAS = 4200;
@@ -281,12 +284,19 @@ function normalizar(v: Vec3): Vec3 {
 function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: number) {
   // lo que se dibuja: los parámetros de la página vestidos con la atmósfera de cada cuadro
   const p = copiarParametros(op.parametros);
-  const programa = (f: { vert: string; frag: string }) => crearPrograma(gl, f.vert, f.frag);
+  const ligera = op.calidad.ligera;
+  // en el camino liviano los shaders se compilan con LIGERA definido
+  const definir = (fuente: string) =>
+    ligera ? fuente.replace(CABECERA, `${CABECERA}#define LIGERA\n`) : fuente;
+  const programa = (f: { vert: string; frag: string }) =>
+    crearPrograma(gl, definir(f.vert), definir(f.frag));
   const progCielo = programa(FUENTES.cielo);
   const progPasto = programa(FUENTES.pasto);
   const progDiente = programa(FUENTES.diente);
   const progDof = programa(FUENTES.dof);
   const progComp = programa(FUENTES.composicion);
+  const progReducir = programa(FUENTES.dofReducir);
+  const progDifuminar = programa(FUENTES.dofDifuminar);
   const progParticula = programa(FUENTES.particula);
   const progVolador = programa(FUENTES.volador);
   const uCielo = ubicaciones(gl, progCielo, [
@@ -364,6 +374,13 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     "u_bruma",
     "u_densidadBruma",
   ] as const);
+  const uReducir = ubicaciones(gl, progReducir, [
+    "u_color",
+    "u_prof",
+    "u_foco",
+    "u_rango",
+  ] as const);
+  const uDifuminar = ubicaciones(gl, progDifuminar, ["u_fuente", "u_paso"] as const);
   const uComp = ubicaciones(gl, progComp, [
     "u_dof",
     "u_prof",
@@ -374,15 +391,29 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     "u_foco",
     "u_rango",
     "u_vista",
+    "u_barato",
+    "u_suave",
   ] as const);
 
-  const malla = mallaHoja(6);
+  const malla = mallaHoja(ligera ? 4 : 6);
   const verticesHoja = malla.length / 2;
   // el pasto se genera solo donde mira la cámara de esta ventana (con su lente y su aspecto) y se
   // regenera si la ventana cambia mucho de forma, por ejemplo al girar el teléfono
   const fovPasto = (op.ajustarCamara ? op.ajustarCamara(p.camara) : p.camara).fov;
+  // en el camino liviano el pasto llega hasta LEJOS_LIGERA: las mismas hojas por metro, menos metros
+  const pastoGenerado = ligera
+    ? { ...p.pasto, zLejos: Math.min(p.pasto.zLejos, LEJOS_LIGERA) }
+    : p.pasto;
+  const fraccionHojas =
+    Math.log(pastoGenerado.zLejos / p.pasto.zCerca) / Math.log(p.pasto.zLejos / p.pasto.zCerca);
   const hojasPara = (a: number) =>
-    generarHojas(hojasParaAspecto(op.calidad.hojas, a), p.pasto, fovPasto, a, op.semilla);
+    generarHojas(
+      Math.round(hojasParaAspecto(op.calidad.hojas, a) * fraccionHojas),
+      pastoGenerado,
+      fovPasto,
+      a,
+      op.semilla,
+    );
   let aspectoPasto = aspecto;
   const pasto = crearVaoInstancias(gl, malla, hojasPara(aspecto));
   const dientes: Diente[] = Array.isArray(op.dientes)
@@ -401,6 +432,10 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
   const voladores = crearVaoVoladores(gl);
   const escena = crearObjetivoEscena(gl, op.calidad.msaa);
   const desenfoque = crearObjetivoSimple(gl);
+  // profundidad de campo barata (teléfonos): la escena desenfocada a media resolución, en dos pasadas
+  const barato = ligera;
+  const mitadA = crearObjetivoSimple(gl);
+  const mitadB = crearObjetivoSimple(gl);
   const triangulo = crearTriangulo(gl);
 
   const usar = (prog: WebGLProgram) => gl.useProgram(prog);
@@ -570,6 +605,33 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     triangulo.dibujar();
   }
 
+  function enfocarBarato(e: EstadoCuadro, foco: number) {
+    mitadA.usar();
+    usar(progReducir);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, escena.texColor);
+    gl.uniform1i(uReducir.u_color, 0);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, escena.texProf);
+    gl.uniform1i(uReducir.u_prof, 1);
+    gl.uniform1f(uReducir.u_foco, foco);
+    gl.uniform1f(uReducir.u_rango, focoActual().rango);
+    triangulo.dibujar();
+    // cuatro muestras por lado alcanzan el radio máximo del desenfoque (en px de la escena)
+    const paso = (focoActual().radioMax * e.dpr) / 4;
+    usar(progDifuminar);
+    gl.uniform1i(uDifuminar.u_fuente, 0);
+    gl.activeTexture(gl.TEXTURE0);
+    mitadB.usar();
+    gl.bindTexture(gl.TEXTURE_2D, mitadA.tex);
+    gl.uniform2f(uDifuminar.u_paso, paso / e.ancho, 0);
+    triangulo.dibujar();
+    mitadA.usar();
+    gl.bindTexture(gl.TEXTURE_2D, mitadB.tex);
+    gl.uniform2f(uDifuminar.u_paso, 0, paso / e.alto);
+    triangulo.dibujar();
+  }
+
   function componer(e: EstadoCuadro, color: WebGLTexture, foco: number) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, e.ancho, e.alto);
@@ -589,6 +651,10 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     gl.uniform1f(uComp.u_foco, foco);
     gl.uniform1f(uComp.u_rango, focoActual().rango);
     gl.uniform1i(uComp.u_vista, p.vista);
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, barato ? mitadA.tex : color);
+    gl.uniform1i(uComp.u_suave, 2);
+    gl.uniform1i(uComp.u_barato, barato ? 1 : 0);
     triangulo.dibujar();
   }
 
@@ -613,12 +679,20 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
       const distancia =
         f.distancia * (1 + 0.03 * Math.sin(e.tiempo * 0.2) * r) + e.rafaga.fuerza * r;
       dibujarEscena(e);
-      enfocar(e, distancia);
-      componer(e, desenfoque.tex, distancia);
+      if (barato) {
+        enfocarBarato(e, distancia);
+        componer(e, escena.texColor, distancia);
+      } else {
+        enfocar(e, distancia);
+        componer(e, desenfoque.tex, distancia);
+      }
     },
     redimensionar(ancho: number, alto: number) {
       escena.redimensionar(ancho, alto);
-      desenfoque.redimensionar(ancho, alto);
+      // solo se reserva memoria para el camino que se usa
+      desenfoque.redimensionar(barato ? 1 : ancho, barato ? 1 : alto);
+      mitadA.redimensionar(barato ? Math.ceil(ancho / 2) : 1, barato ? Math.ceil(alto / 2) : 1);
+      mitadB.redimensionar(barato ? Math.ceil(ancho / 2) : 1, barato ? Math.ceil(alto / 2) : 1);
     },
     destruir() {
       for (const r of [
@@ -629,6 +703,8 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
         voladores,
         escena,
         desenfoque,
+        mitadA,
+        mitadB,
         triangulo,
       ])
         r.destruir();
@@ -638,6 +714,8 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
         progDiente,
         progDof,
         progComp,
+        progReducir,
+        progDifuminar,
         progParticula,
         progVolador,
       ])

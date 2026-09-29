@@ -11,6 +11,8 @@ uniform float u_tiempo;
 uniform float u_foco;
 uniform float u_rango;
 uniform int u_vista;        // 0 final, 1 profundidad, 2 círculo de confusión, 3 viento
+uniform int u_barato;       // 1: u_dof es la escena nítida y u_suave, su copia desenfocada a media resolución
+uniform sampler2D u_suave;
 
 out vec4 o;
 
@@ -19,6 +21,12 @@ float azar(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.545
 void main() {
   vec3 c = texture(u_dof, v_uv).rgb;
   float d = texture(u_prof, v_uv).r;
+  if (u_barato == 1) {
+    // cuánto se desenfoca: lo propio de este punto, o lo borroso de adelante que se derrama sobre él
+    vec4 suave = texture(u_suave, v_uv);
+    float propio = clamp(abs(d - u_foco) / u_rango, 0.0, 1.0);
+    c = mix(c, suave.rgb, clamp(max(propio, -suave.a) * 1.4, 0.0, 1.0));
+  }
   if (u_vista == 1) c = vec3(1.0 - clamp(d / 40.0, 0.0, 1.0));
   if (u_vista == 2) c = vec3(clamp(abs(d - u_foco) / u_rango, 0.0, 1.0), 0.0, 0.0);
 

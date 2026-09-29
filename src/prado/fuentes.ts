@@ -6,6 +6,8 @@ import comun from "./shaders/comun.glsl?raw";
 import dienteFrag from "./shaders/diente.frag?raw";
 import dienteVert from "./shaders/diente.vert?raw";
 import dofFrag from "./shaders/dof.frag?raw";
+import dofDifuminarFrag from "./shaders/dof-difuminar.frag?raw";
+import dofReducirFrag from "./shaders/dof-reducir.frag?raw";
 import hoja from "./shaders/hoja.glsl?raw";
 import pantallaVert from "./shaders/pantalla.vert?raw";
 import particulaFrag from "./shaders/particula.frag?raw";
@@ -24,6 +26,8 @@ export const FUENTES = {
   pasto: { vert: conHoja + pastoVert, frag: CABECERA + pastoFrag },
   diente: { vert: conHoja + dienteVert, frag: CABECERA + comun + dienteFrag },
   dof: { vert: CABECERA + pantallaVert, frag: CABECERA + dofFrag },
+  dofReducir: { vert: CABECERA + pantallaVert, frag: CABECERA + dofReducirFrag },
+  dofDifuminar: { vert: CABECERA + pantallaVert, frag: CABECERA + dofDifuminarFrag },
   composicion: { vert: CABECERA + pantallaVert, frag: CABECERA + comun + composicionFrag },
   semilla: { vert: CABECERA + semillaVert, frag: CABECERA + semillaFrag },
   particula: { vert: CABECERA + particulaVert, frag: CABECERA + particulaFrag },

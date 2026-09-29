@@ -17,8 +17,12 @@ float empujeViento(vec2 raiz) {
   vec2 dir = normalize(vec2(1.0, -0.25));
   // la brisa viaja con el viento: parches que recorren el prado, no ruido que hierve en su lugar
   vec2 arrastre = raiz - dir * t * 1.8;
+#ifdef LIGERA
+  float brisa = snoise(vec3(arrastre * u_viento.x, t * 0.04)) * 0.8;
+#else
   float brisa = snoise(vec3(arrastre * u_viento.x, t * 0.04)) * 0.7
               + snoise(vec3(arrastre * u_viento.x * 2.7, t * 0.09)) * 0.3;
+#endif
   // la ráfaga es un frente que avanza por el prado (en el espacio, con parallax): cruza rápido el
   // pasto cercano y despacio el lejano, y llega en diagonal
   float s = dot(raiz, dir);

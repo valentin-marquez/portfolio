@@ -1,8 +1,9 @@
 // El ritmo del prado: cuántas veces por segundo se dibuja y con cuánto detalle. Un prado que se mueve
 // despacio no necesita 120 cuadros por segundo, así que en pantallas rápidas dibuja uno de cada dos. Y
-// si el equipo no alcanza a sostener el ritmo, baja de a un nivel la resolución interna y las
-// muestras del desenfoque, y al final pasa a 30 cuadros estables. Solo baja, nunca sube: un prado que
-// cambia de calidad a cada rato se nota más que uno un poco más suave.
+// si el equipo no alcanza a sostener el ritmo, primero baja las muestras del desenfoque, después pasa a
+// 30 cuadros estables y solo al final baja un poco la resolución: en un teléfono de densidad alta, la
+// resolución es lo que más se nota (el pasto se pixela). Solo baja, nunca sube: un prado que cambia de
+// calidad a cada rato se nota más que uno un poco más lento.
 
 export interface Nivel {
   /** fracción de la resolución que permite la calidad del equipo */
@@ -14,9 +15,9 @@ export interface Nivel {
 
 export const NIVELES: readonly Nivel[] = [
   { escala: 1, dof: 1, fps: 60 },
-  { escala: 0.82, dof: 0.75, fps: 60 },
-  { escala: 0.68, dof: 0.55, fps: 60 },
-  { escala: 0.68, dof: 0.55, fps: 30 },
+  { escala: 1, dof: 0.7, fps: 60 },
+  { escala: 1, dof: 0.7, fps: 30 },
+  { escala: 0.85, dof: 0.6, fps: 30 },
 ];
 
 /** Lo que comparten los prados de la página: el nivel al que llegó cualquiera de ellos, y cifras. */
