@@ -31,7 +31,7 @@ export const trabajos: Trabajo[] = [
     rolPase: "Especialista en TI",
     desde: "2026-04",
     lugar: "Santiago, híbrido",
-    color: "hoja",
+    color: "cielo",
     cinta: "fao chile",
     resumen:
       "Llevo la parte de tecnología de dos proyectos de cambio climático: CBIT-2, que fortalece el marco de transparencia de las NDC, y el de Soluciones Basadas en la Naturaleza.",
@@ -50,7 +50,7 @@ export const trabajos: Trabajo[] = [
     rol: "Ingeniero de software y desarrollador principal",
     desde: "2024-05",
     lugar: "Remoto",
-    color: "cielo",
+    color: "hoja",
     cinta: "framerate.cl",
     resumen:
       "Un comparador de precios de hardware para las tiendas de Chile. Lo diseñé y lo construyo de punta a punta, con la arquitectura pensada para crecer y responder rápido.",

@@ -1,18 +1,12 @@
-// El pase de un trabajo: una credencial de plástico colgada de su cinta, con el ícono del prado que le
-// toca, el nombre de la empresa, el cargo, la firma y una banda de color con el periodo y el código.
+// El pase de un trabajo: una credencial de plástico colgada de su cinta, con el logo del lugar, el
+// nombre de la empresa, el cargo, la firma y una banda de color con el periodo y el código.
 // Es solo dibujo: quien lo usa decide si es un botón o una ilustración.
 import type { ColorPase, Trabajo } from "@/contenido/trabajos";
 import { barras, numeroPase, periodo } from "@/contenido/trabajos";
 import { CIELO, DEDAL, HOJA } from "./colores-prado";
-import { IconoDedalDeOro, IconoHoja, IconoVentana } from "./iconos-prado";
-import type { IconoVivo } from "./palabra-viva";
+import { LOGOS } from "./logos-trabajos";
 
 export const COLOR: Record<ColorPase, string> = { hoja: HOJA, cielo: CIELO, dedal: DEDAL };
-const ICONO: Record<ColorPase, IconoVivo> = {
-  hoja: IconoHoja,
-  cielo: IconoVentana,
-  dedal: IconoDedalDeOro,
-};
 
 /** el pase mide lo que una credencial real, en proporción (54 × 86 mm) */
 export const ANCHO_PASE = 168;
@@ -33,7 +27,6 @@ export function Cinta({ trabajo, alto }: { trabajo: Trabajo; alto: string }) {
 
 export function Pase({ trabajo, activo }: { trabajo: Trabajo; activo: boolean }) {
   const color = COLOR[trabajo.color];
-  const Icono = ICONO[trabajo.color];
   return (
     <span
       data-pase
@@ -49,12 +42,16 @@ export function Pase({ trabajo, activo }: { trabajo: Trabajo; activo: boolean })
           <span>pase</span>
           <span>nº {numeroPase(trabajo)}</span>
         </span>
-        <span
-          aria-hidden="true"
-          className="mt-3 grid size-[46px] place-items-center rounded-[10px]"
-          style={{ backgroundColor: `color-mix(in oklab, ${color} 12%, var(--color-plastico))` }}
-        >
-          <Icono className="size-7" activo={activo} />
+        {/* cada logo impreso en su recuadro blanco, como en una credencial */}
+        <span aria-hidden="true" className="mt-3 flex gap-1.5">
+          {(LOGOS[trabajo.id] ?? []).map((logo) => (
+            <span
+              key={logo.clave}
+              className="grid size-[46px] place-items-center rounded-[10px] bg-white ring-1 ring-enfasis/[0.07]"
+            >
+              {logo.dibujo(activo)}
+            </span>
+          ))}
         </span>
         <span className="mt-3 text-[20px] leading-6 font-medium tracking-[-0.01em] text-enfasis">
           {trabajo.empresa}
