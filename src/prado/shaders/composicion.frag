@@ -24,7 +24,10 @@ void main() {
 
   // el ruido solo mete el borde hacia adentro: en el límite del canvas el alfa siempre es 0 y el
   // prado nunca queda cortado por una "pared"
-  float n = (snoise(vec3(v_uv * vec2(3.0, 2.0), u_tiempo * 0.02)) * 0.5 + 0.5) * u_ruidoBorde;
+  // lejos del borde el ruido no alcanza a mover nada: solo se calcula en la franja que se disuelve
+  vec2 margen = u_borde + u_ruidoBorde;
+  bool adentro = all(greaterThan(v_uv, margen)) && all(lessThan(v_uv, 1.0 - margen));
+  float n = adentro ? 0.0 : (snoise(vec3(v_uv * vec2(3.0, 2.0), u_tiempo * 0.02)) * 0.5 + 0.5) * u_ruidoBorde;
   float mx = smoothstep(0.0, u_borde.x, v_uv.x - n) * smoothstep(0.0, u_borde.x, 1.0 - v_uv.x - n);
   float my = smoothstep(0.0, u_borde.y, v_uv.y - n) * smoothstep(0.0, u_borde.y, 1.0 - v_uv.y - n);
   float alfa = mx * my;

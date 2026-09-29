@@ -6,6 +6,8 @@ in float v_viento;
 in vec3 v_normal;
 in vec3 v_mundo;
 in float v_prof;
+in float v_mancha;
+in float v_nube;
 
 uniform vec3 u_camara;
 uniform vec3 u_tonoBase;
@@ -19,7 +21,6 @@ uniform float u_translucidez;
 uniform vec3 u_bruma;
 uniform float u_densidadBruma;
 uniform int u_vista;
-uniform vec2 u_nubes;  // desplazamiento de las sombras de nubes, empujadas por el viento
 uniform float u_nubosidad;  // con el cielo cubierto las sombras de nubes se funden en una sola
 uniform float u_escarcha;   // puntas blanqueadas por la helada o la nieve
 
@@ -36,12 +37,11 @@ void main() {
     ? u_tonoTallo
     : mix(mix(u_tonoBase, u_tonoCuerpo, smoothstep(0.0, 0.45, v_v)), u_tonoPunta, smoothstep(0.55, 1.0, v_v));
   // manchas amplias y variación por hoja, para que el campo no sea un verde plano
-  float mancha = snoise(vec3(v_mundo.xz * 0.35, 1.7)) * 0.5 + 0.5;
+  float mancha = v_mancha;
   base *= mix(0.86, 1.08, mancha) * mix(0.94, 1.06, fract(v_tono * 7.31));
 
   // sombras de nubes: manchas amplias y suaves que cruzan despacio el prado
-  vec2 pn = v_mundo.xz + u_nubes;
-  float nube = smoothstep(0.1, 0.6, snoise(vec3(pn * 0.035, 0.7)) * 0.6 + snoise(vec3(pn * 0.09, 2.3)) * 0.4);
+  float nube = v_nube;
   vec3 luzSol = u_colorSol * mix(1.0, 0.5, nube * (1.0 - 0.85 * u_nubosidad));
 
   float ao = mix(0.35, 1.0, smoothstep(0.0, 0.4, v_v));

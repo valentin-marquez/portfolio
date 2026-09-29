@@ -13,12 +13,14 @@ import {
 import { calcularProgreso, escena, vientoDelLatido } from "./estado/escena";
 import { atmosferaDe, atmosferaEn, fijarAtmosfera } from "./prado/atmosfera";
 import { pasoTiempo, rafagaDelPrado } from "./prado/motor";
+import { NIVELES, rendimiento } from "./prado/ritmo";
 import { fijarClima, influenciaScroll } from "./prado/viento";
 import { BordeDifuso } from "./secciones/borde-difuso";
 import { CapaSemillas } from "./secciones/capa-semillas";
 import { Cierre } from "./secciones/cierre";
 import { Hero } from "./secciones/hero";
 import { Intro } from "./secciones/intro";
+import { Medidor } from "./secciones/medidor";
 import { SobreMi } from "./secciones/sobre-mi";
 import { Trabajos } from "./secciones/trabajos";
 import { Presentacion } from "./variantes/cuatro";
@@ -43,6 +45,12 @@ function almacenDeSesion(): Almacen | null {
 
 // el viento real se pide una sola vez por carga (StrictMode monta los efectos dos veces en desarrollo)
 let climaPedido = false;
+
+// ?rendimiento muestra el medidor; ?nivel=2 fija un nivel de calidad para comparar en un teléfono
+const consulta = new URLSearchParams(window.location.search);
+const conMedidor = consulta.has("rendimiento");
+const nivelPedido = Number.parseInt(consulta.get("nivel") ?? "", 10);
+if (nivelPedido >= 0 && nivelPedido < NIVELES.length) rendimiento.nivel = nivelPedido;
 
 /** ?tiempo=lluvia y ?estacion=otono muestran el prado así, sin importar el tiempo real */
 function pedidoEnLaUrl() {
@@ -175,6 +183,7 @@ export function App() {
   return (
     <>
       <CapaSemillas />
+      {conMedidor && <Medidor />}
       {variante === "4" ? (
         <Presentacion />
       ) : variante === "1" ? (

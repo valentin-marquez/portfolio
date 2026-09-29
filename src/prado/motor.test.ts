@@ -151,6 +151,8 @@ describe("montarPrado controlado desde afuera", () => {
         return { ...base, altura: base.altura + 1 };
       },
     });
+    // al montar la consulta una vez para saber qué lente mira el pasto; lo que importa es cada cuadro
+    vistas.length = 0;
     alObservar?.([{ isIntersecting: true }]);
     cuadros.at(-1)?.(16);
     expect(vistas).toEqual([1.6]);

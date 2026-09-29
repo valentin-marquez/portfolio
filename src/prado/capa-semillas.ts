@@ -223,6 +223,9 @@ export function montarCapaSemillas(
   let raf = 0;
   let anterior: number | null = null;
   let dibujadasAntes = 0;
+  // la capa cubre toda la pantalla y el navegador la compone en cada cuadro: en teléfonos (pantallas
+  // táctiles de densidad alta) basta 1,5, las semillas son pequeñas y casi siempre desenfocadas
+  const dprMaximo = window.matchMedia?.("(pointer: coarse)").matches ? 1.5 : 2;
 
   function cuadro(ahora: number) {
     raf = requestAnimationFrame(cuadro);
@@ -264,7 +267,7 @@ export function montarCapaSemillas(
     if (desprendido.length !== objetivo.length) desprendido = objetivo.map(() => 0);
     suavizarDesprendimiento(desprendido, objetivo, dt);
     fuente.desprender?.(desprendido);
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, dprMaximo);
     const ancho = Math.round(anchoCss * dpr);
     const alto = Math.round(altoCss * dpr);
     if (canvas.width !== ancho || canvas.height !== alto) {

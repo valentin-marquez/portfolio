@@ -7,6 +7,7 @@ uniform vec2 u_rafaga;       // x: fuerza 0..1; y: frente en x de pantalla (0..1
 uniform float u_extra;       // influencia del visitante, ya acotada
 uniform vec4 u_puntero;      // x, z bajo el cursor; radio; fuerza (0 sin puntero)
 uniform vec4 u_rastro[12];   // estela del cursor: x, z y empuje (dirección × fuerza)
+uniform float u_hayRastro;   // 0 si la estela está vacía: se salta el recorrido
 uniform vec3 u_viento;       // escala del ruido, fuerza del ruido, fuerza de la ráfaga
 uniform float u_movimiento;  // 1 normal, 0.15 con reduced motion
 uniform float u_torsion;
@@ -33,6 +34,7 @@ float empujeViento(vec2 raiz) {
 // parecido cerca y lejos.
 vec2 empujeRastro(vec2 base) {
   vec2 total = vec2(0.0);
+  if (u_hayRastro < 0.5) return total;
   for (int i = 0; i < 12; i++) {
     vec4 m = u_rastro[i];
     vec2 d = base - m.xy;

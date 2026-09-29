@@ -8,6 +8,10 @@ out float v_viento;
 out vec3 v_normal;
 out vec3 v_mundo;
 out float v_prof;
+out float v_mancha;
+out float v_nube;
+
+uniform vec2 u_nubes;  // desplazamiento de las sombras de nubes, empujadas por el viento
 
 void main() {
   vec3 normal;
@@ -19,5 +23,10 @@ void main() {
   v_normal = normal;
   v_mundo = p;
   v_prof = length(p - u_camara);
+  // manchas del pasto y sombras de nubes: cambian a escala de metros, así que basta calcularlas en
+  // cada vértice y no en cada píxel (ahorra tres ruidos por píxel, que era lo más caro del pasto)
+  v_mancha = snoise(vec3(p.xz * 0.35, 1.7)) * 0.5 + 0.5;
+  vec2 pn = p.xz + u_nubes;
+  v_nube = smoothstep(0.1, 0.6, snoise(vec3(pn * 0.035, 0.7)) * 0.6 + snoise(vec3(pn * 0.09, 2.3)) * 0.4);
   gl_Position = u_vistaProy * vec4(p, 1.0);
 }

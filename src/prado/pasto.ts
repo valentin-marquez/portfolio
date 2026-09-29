@@ -14,9 +14,21 @@ export function mallaHoja(segmentos = 6): Float32Array {
   return new Float32Array(m);
 }
 
+/** la cantidad de hojas de cada calidad está pensada para una ventana así de ancha */
+const ASPECTO_REFERENCIA = 2.2;
+
+/**
+ * Cuántas hojas hacen falta para una ventana de este aspecto con la misma densidad: el pasto se
+ * genera solo donde la cámara mira, y un teléfono vertical ve un tercio de lo que ve una pantalla ancha.
+ */
+export function hojasParaAspecto(hojas: number, aspecto: number): number {
+  return Math.round(hojas * Math.min(1, Math.max(0.25, aspecto / ASPECTO_REFERENCIA)));
+}
+
 /**
  * Hojas repartidas por octavas de distancia (z logarítmica): cada tramo de profundidad recibe una
  * cantidad parecida de hojas, y las lejanas se ensanchan para cubrir el suelo sin gastar millones.
+ * Van ordenadas de cerca a lejos: así la GPU descarta lo que queda tapado sin llegar a pintarlo.
  */
 export function generarHojas(
   n: number,
@@ -43,7 +55,18 @@ export function generarHojas(
     datos[o + 6] = azar() * 0.999;
     datos[o + 7] = azar();
   }
-  return datos;
+  const orden = Array.from({ length: n }, (_, i) => i).sort(
+    (a, b) =>
+      (datos[b * FLOTANTES_POR_HOJA + 1] as number) - (datos[a * FLOTANTES_POR_HOJA + 1] as number),
+  );
+  const ordenadas = new Float32Array(datos.length);
+  orden.forEach((desde, hacia) => {
+    ordenadas.set(
+      datos.subarray(desde * FLOTANTES_POR_HOJA, (desde + 1) * FLOTANTES_POR_HOJA),
+      hacia * FLOTANTES_POR_HOJA,
+    );
+  });
+  return ordenadas;
 }
 
 export interface Diente {

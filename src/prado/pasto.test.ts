@@ -4,6 +4,7 @@ import {
   FLOTANTES_POR_HOJA,
   generarDientes,
   generarHojas,
+  hojasParaAspecto,
   instanciasTallos,
   mallaHoja,
   puntaDiente,
@@ -37,6 +38,19 @@ describe("generarHojas", () => {
       expect(hojas[o + 2]).toBeLessThanOrEqual(p.pasto.alturaMax * 1.6);
       expect(hojas[o + 6]).toBeLessThan(1);
     }
+  });
+
+  it("van ordenadas de cerca a lejos, para que la GPU descarte lo tapado", () => {
+    for (let i = 1; i < 5000; i++) {
+      const antes = hojas[(i - 1) * FLOTANTES_POR_HOJA + 1] as number;
+      expect(hojas[i * FLOTANTES_POR_HOJA + 1]).toBeLessThanOrEqual(antes);
+    }
+  });
+
+  it("una ventana angosta necesita menos hojas para la misma densidad, nunca más que las pedidas", () => {
+    expect(hojasParaAspecto(14000, 0.66)).toBeLessThan(5000);
+    expect(hojasParaAspecto(14000, 3)).toBe(14000);
+    expect(hojasParaAspecto(14000, 0.1)).toBe(3500);
   });
 
   it("reparte por octavas de distancia: cerca y lejos tienen cantidades comparables", () => {

@@ -25,11 +25,20 @@ import {
   FLOTANTES_POR_HOJA,
   generarDientes,
   generarHojas,
+  hojasParaAspecto,
   instanciasTallos,
   mallaHoja,
   puntaDiente,
 } from "./pasto";
 import { actualizarRastro, crearRastro, uniformeRastro } from "./rastro";
+import {
+  crearMedicion,
+  nivelActual,
+  reanudar,
+  registrarCuadro,
+  rendimiento,
+  tocaDibujar,
+} from "./ritmo";
 import { influenciaScroll, type Rafaga, rafaga, sentidoActual } from "./viento";
 import {
   avanzarEnjambre,
@@ -110,6 +119,7 @@ const NOMBRES_HOJA = [
   "u_movimiento",
   "u_torsion",
   "u_rastro",
+  "u_hayRastro",
 ] as const;
 
 interface EstadoCuadro {
@@ -127,6 +137,8 @@ interface EstadoCuadro {
   ancho: number;
   alto: number;
   dpr: number;
+  /** muestras de la profundidad de campo en este cuadro (el ritmo puede bajarlas) */
+  muestrasDof: number;
   fov: number;
   /** lo que el clima agrega en este cuadro */
   efectos: Efectos;
@@ -165,6 +177,12 @@ function crearVaoInstancias(
   return {
     vao,
     cantidad: instancias.length / FLOTANTES_POR_HOJA,
+    /** otras instancias en el mismo VAO (por ejemplo, el pasto para otro aspecto de ventana) */
+    reemplazar(nuevas: Float32Array) {
+      gl.bindBuffer(gl.ARRAY_BUFFER, bInst);
+      gl.bufferData(gl.ARRAY_BUFFER, nuevas, gl.STATIC_DRAW);
+      this.cantidad = nuevas.length / FLOTANTES_POR_HOJA;
+    },
     destruir() {
       gl.deleteBuffer(bBase);
       gl.deleteBuffer(bInst);
@@ -247,6 +265,12 @@ function crearVaoVoladores(gl: WebGL2RenderingContext) {
       gl.deleteVertexArray(vao);
     },
   };
+}
+
+/** la estela tiene algún empuje (x, z, empuje x, empuje y por muestra) */
+function hayRastro(r: Float32Array): boolean {
+  for (let i = 2; i < r.length; i += 4) if (r[i] !== 0 || r[i + 1] !== 0) return true;
+  return false;
 }
 
 function normalizar(v: Vec3): Vec3 {
@@ -354,12 +378,13 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
 
   const malla = mallaHoja(6);
   const verticesHoja = malla.length / 2;
-  // las hojas se generan una vez con un aspecto generoso, así redimensionar no las regenera
-  const pasto = crearVaoInstancias(
-    gl,
-    malla,
-    generarHojas(op.calidad.hojas, p.pasto, p.camara.fov, 2.2, op.semilla),
-  );
+  // el pasto se genera solo donde mira la cámara de esta ventana (con su lente y su aspecto) y se
+  // regenera si la ventana cambia mucho de forma, por ejemplo al girar el teléfono
+  const fovPasto = (op.ajustarCamara ? op.ajustarCamara(p.camara) : p.camara).fov;
+  const hojasPara = (a: number) =>
+    generarHojas(hojasParaAspecto(op.calidad.hojas, a), p.pasto, fovPasto, a, op.semilla);
+  let aspectoPasto = aspecto;
+  const pasto = crearVaoInstancias(gl, malla, hojasPara(aspecto));
   const dientes: Diente[] = Array.isArray(op.dientes)
     ? op.dientes
     : generarDientes(op.dientes, p, aspecto, op.semilla);
@@ -393,6 +418,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     gl.uniform1f(u.u_extra, e.extra);
     gl.uniform4f(u.u_puntero, ...e.puntero);
     gl.uniform4fv(u.u_rastro, e.rastro);
+    gl.uniform1f(u.u_hayRastro, hayRastro(e.rastro) ? 1 : 0);
     gl.uniform3f(u.u_viento, p.viento.escalaRuido, p.viento.fuerzaRuido, p.viento.fuerzaRafaga);
     gl.uniform1f(u.u_movimiento, e.movimiento);
     gl.uniform1f(u.u_torsion, p.pasto.torsion);
@@ -407,23 +433,6 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     gl.clear(gl.DEPTH_BUFFER_BIT);
     gl.disable(gl.BLEND);
     gl.disable(gl.CULL_FACE);
-
-    // cielo y suelo lejano, sin prueba de profundidad
-    gl.disable(gl.DEPTH_TEST);
-    usar(progCielo);
-    gl.uniformMatrix4fv(uCielo.u_inversa, false, e.inversa);
-    v3(uCielo.u_camara, e.ojo);
-    v3(uCielo.u_sol, sol);
-    c3(uCielo.u_colorSol, p.luz.colorSol);
-    c3(uCielo.u_cieloArriba, p.cielo.arriba);
-    c3(uCielo.u_cieloHorizonte, p.cielo.horizonte);
-    c3(uCielo.u_bruma, p.bruma.color);
-    gl.uniform1f(uCielo.u_densidadBruma, p.bruma.densidad);
-    c3(uCielo.u_tonoSuelo, p.pasto.tonoSuelo);
-    gl.uniform2f(uCielo.u_nubes, ...nubes);
-    gl.uniform1f(uCielo.u_nubosidad, e.efectos.nubosidad);
-    gl.uniform1f(uCielo.u_destello, e.efectos.destello);
-    triangulo.dibujar();
 
     // pasto y tallos
     gl.enable(gl.DEPTH_TEST);
@@ -448,6 +457,29 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, verticesHoja, pasto.cantidad);
     gl.bindVertexArray(tallos.vao);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, verticesHoja, tallos.cantidad);
+
+    // cielo y suelo lejano, después del pasto y clavados al fondo (profundidad 1): la GPU descarta
+    // todo lo que el pasto ya tapó sin calcular su ruido, y solo pinta lo que se ve entre las hojas
+    gl.depthRange(1, 1);
+    gl.depthFunc(gl.LEQUAL);
+    gl.depthMask(false);
+    usar(progCielo);
+    gl.uniformMatrix4fv(uCielo.u_inversa, false, e.inversa);
+    v3(uCielo.u_camara, e.ojo);
+    v3(uCielo.u_sol, sol);
+    c3(uCielo.u_colorSol, p.luz.colorSol);
+    c3(uCielo.u_cieloArriba, p.cielo.arriba);
+    c3(uCielo.u_cieloHorizonte, p.cielo.horizonte);
+    c3(uCielo.u_bruma, p.bruma.color);
+    gl.uniform1f(uCielo.u_densidadBruma, p.bruma.densidad);
+    c3(uCielo.u_tonoSuelo, p.pasto.tonoSuelo);
+    gl.uniform2f(uCielo.u_nubes, ...nubes);
+    gl.uniform1f(uCielo.u_nubosidad, e.efectos.nubosidad);
+    gl.uniform1f(uCielo.u_destello, e.efectos.destello);
+    triangulo.dibujar();
+    gl.depthRange(0, 1);
+    gl.depthFunc(gl.LESS);
+    gl.depthMask(true);
 
     // cabezas de los dientes de león
     usar(progDiente);
@@ -534,7 +566,7 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     gl.uniform1f(uDof.u_foco, foco);
     gl.uniform1f(uDof.u_rango, focoActual().rango);
     gl.uniform1f(uDof.u_radioMax, focoActual().radioMax * e.dpr);
-    gl.uniform1i(uDof.u_muestras, op.calidad.muestrasDof);
+    gl.uniform1i(uDof.u_muestras, e.muestrasDof);
     triangulo.dibujar();
   }
 
@@ -564,6 +596,16 @@ function crearRecursos(gl: WebGL2RenderingContext, op: OpcionesPrado, aspecto: n
     dientes,
     /** los parámetros vestidos que se dibujan; el motor los rellena cada cuadro */
     parametros: p,
+    /** cuántas hojas tiene el pasto ahora */
+    get hojas() {
+      return pasto.cantidad;
+    },
+    /** si la ventana cambió mucho de forma, el pasto se regenera para la vista nueva */
+    ajustarAspecto(a: number) {
+      if (Math.abs(a / aspectoPasto - 1) < 0.2) return;
+      aspectoPasto = a;
+      pasto.reemplazar(hojasPara(a));
+    },
     dibujar(e: EstadoCuadro) {
       // el foco respira apenas, y se abre un poco con cada ráfaga
       const f = focoActual();
@@ -652,6 +694,7 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
       return { ...punta, y: punta.y + radioCabeza * 0.75 };
     });
   let flores = recursos ? floresDe(recursos) : [];
+  const medicion = crearMedicion(performance.now());
 
   function fallar(error: unknown) {
     console.error(error);
@@ -664,6 +707,13 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
   function cuadro(ahora: number) {
     raf = 0;
     if (!visible || perdido || fallido || enPausa || !recursos) return;
+    // en pantallas rápidas no hace falta dibujar cada refresco: se espera al siguiente
+    if (!tocaDibujar(medicion, ahora)) {
+      raf = requestAnimationFrame(cuadro);
+      return;
+    }
+    registrarCuadro(medicion, ahora);
+    const nivel = nivelActual();
     try {
       ahoraS = ahora / 1000;
       const dt = pasoTiempo(anterior, ahora);
@@ -673,7 +723,7 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
       extra = influenciaScroll(extra, velocidad, dt);
       velocidad *= Math.exp(-dt * 4);
 
-      const dpr = Math.min(window.devicePixelRatio || 1, op.calidad.dprMax);
+      const dpr = Math.min(window.devicePixelRatio || 1, op.calidad.dprMax) * nivel.escala;
       const ancho = Math.max(1, Math.round(canvas.clientWidth * dpr));
       const alto = Math.max(1, Math.round(canvas.clientHeight * dpr));
       if (canvas.width !== ancho || canvas.height !== alto) {
@@ -681,6 +731,10 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
         canvas.height = alto;
       }
       recursos.redimensionar(ancho, alto);
+      recursos.ajustarAspecto(aspectoActual());
+      // lo que muestra el medidor de ?rendimiento
+      rendimiento.resolucion = `${canvas.clientWidth}×${canvas.clientHeight} → ${ancho}×${alto}`;
+      rendimiento.hojas = recursos.hojas;
 
       const camara = op.ajustarCamara ? op.ajustarCamara(p.camara) : p.camara;
       const ojo = { x: 0, y: camara.altura, z: -camara.avance };
@@ -752,6 +806,7 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
         ancho,
         alto,
         dpr,
+        muestrasDof: Math.max(8, Math.round(op.calidad.muestrasDof * nivel.dof)),
         fov: camara.fov,
         efectos,
         voladores: escribirInstancias(enjambre, datosVoladores),
@@ -777,6 +832,7 @@ export function montarPrado(canvas: HTMLCanvasElement, op: OpcionesPrado): Prado
   const pedir = () => {
     if (raf || !visible || perdido || fallido || enPausa) return;
     anterior = null;
+    reanudar(medicion, performance.now());
     raf = requestAnimationFrame(cuadro);
   };
 

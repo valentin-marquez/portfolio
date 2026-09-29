@@ -21,7 +21,7 @@ const conHoja = CABECERA + comun + hoja;
 
 export const FUENTES = {
   cielo: { vert: CABECERA + pantallaVert, frag: CABECERA + comun + cieloFrag },
-  pasto: { vert: conHoja + pastoVert, frag: CABECERA + comun + pastoFrag },
+  pasto: { vert: conHoja + pastoVert, frag: CABECERA + pastoFrag },
   diente: { vert: conHoja + dienteVert, frag: CABECERA + comun + dienteFrag },
   dof: { vert: CABECERA + pantallaVert, frag: CABECERA + dofFrag },
   composicion: { vert: CABECERA + pantallaVert, frag: CABECERA + comun + composicionFrag },
