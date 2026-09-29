@@ -11,6 +11,7 @@ import {
 } from "motion/react";
 import { type RefObject, useCallback, useLayoutEffect, useRef, useState } from "react";
 import { enumerar, periodo, type Trabajo, trabajos } from "@/contenido/trabajos";
+import { escena } from "@/estado/escena";
 import { sentidoActual, vientoEn } from "@/prado/viento";
 import { Aparecer } from "./aparecer";
 import { Argolla, Cinta, COLOR, Pase } from "./pase";
@@ -63,6 +64,7 @@ export function Trabajos() {
                 trabajo={t}
                 reposo={REPOSO[i] ?? 0}
                 oculto={abierto === i}
+                quieto={abierto !== null}
                 refPase={(el) => {
                   pases.current[i] = el;
                 }}
@@ -86,12 +88,15 @@ function Colgado({
   trabajo,
   reposo,
   oculto,
+  quieto,
   refPase,
   alAbrir,
 }: {
   trabajo: Trabajo;
   reposo: number;
   oculto: boolean;
+  /** con el detalle abierto no se mece: está detrás del desenfoque y moverlo obliga a recalcularlo */
+  quieto: boolean;
   refPase: (el: HTMLElement | null) => void;
   alAbrir: (giro: number) => void;
 }) {
@@ -104,7 +109,7 @@ function Colgado({
 
   useAnimationFrame((_, delta) => {
     const el = ref.current;
-    if (reducir || !enVista || !el) return;
+    if (reducir || quieto || !enVista || !el) return;
     const r = el.getBoundingClientRect();
     // la ola cruza la pantalla: el pase la siente cuando el frente pasa por su centro
     const x = (r.left + r.width / 2) / window.innerWidth;
@@ -182,6 +187,9 @@ function Detalle({
     if (!trabajo || !d) return;
     cerrando.current = false;
     if (!d.open) d.showModal();
+    // los prados quedan detrás del desenfoque: dibujarlos solo obligaría a recalcularlo
+    escena.pradoHero?.fijarEnPausa(true);
+    escena.pradoCierre?.fijarEnPausa(true);
     const { x, y } = distancia();
     const giro = origen.current?.giro ?? 0;
     if (reducir) {
@@ -218,6 +226,8 @@ function Detalle({
       ]);
     }
     d.close();
+    escena.pradoHero?.fijarEnPausa(false);
+    escena.pradoCierre?.fijarEnPausa(false);
     alCerrar();
     // el pase de la lista vuelve a verse en el cuadro siguiente: recién ahí puede recibir el foco
     requestAnimationFrame(() => pase?.focus({ preventScroll: true }));

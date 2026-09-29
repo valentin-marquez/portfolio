@@ -1,6 +1,10 @@
 import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 
+// en pantallas táctiles (densidad alta) un desenfoque grande sobre el prado cuesta demasiado mientras
+// entra: se usa un tercio, que a esa densidad se ve parecido
+const TACTIL = typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
+
 /**
  * Aparición al cargar la página: desde el desenfoque, sin que nada salga de la nada. Con movimiento
  * reducido es solo un fundido corto.
@@ -22,7 +26,11 @@ export function Entrada({
   return (
     <motion.div
       className={className}
-      initial={reducir ? { opacity: 0 } : { opacity: 0, filter: `blur(${desenfoque}px)`, y: 8 }}
+      initial={
+        reducir
+          ? { opacity: 0 }
+          : { opacity: 0, filter: `blur(${TACTIL ? desenfoque / 3 : desenfoque}px)`, y: 8 }
+      }
       animate={{ opacity: 1, filter: "blur(0px)", y: 0, transitionEnd: { filter: "none" } }}
       transition={{
         duration: reducir ? 0.4 : duracion,
