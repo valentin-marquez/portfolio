@@ -7,7 +7,6 @@
 // Acá el robot es el gólem de hierro de Minecraft, el formulario es un registro para la MineCon y,
 // en vez de reversa, un flechazo lo deshace y la tarjeta se rearma con el «gracias».
 import * as THREE from "three";
-import "./formulario.css";
 import { crearEscena } from "./escena";
 import { TARJETA } from "./golem";
 import { fijarEstado, incrustarImagenes, instantanea, leerCss } from "./instantanea";
@@ -91,11 +90,11 @@ const e = crearEscena(
 let render: Render | null = null;
 try {
   render = crearRender(contenedor, e, destello, params.has("sin-webgl"));
-  render.precompilar();
 } catch {
   render = null; // sin WebGL2: la tarjeta de gracias aparece sin animación
 }
-contenedor.style.visibility = "hidden";
+// los shaders se compilan después del primer cuadro: la página se ve y responde de inmediato
+requestAnimationFrame(() => setTimeout(() => render?.precompilar()));
 
 // ============ sonido ============
 const almacen = (() => {
@@ -106,15 +105,27 @@ const almacen = (() => {
   }
 })();
 const sonido = crearSonido(almacen, suena(e.paneles.map((x) => x.vuelta[1])));
+// el parlante del primer Experimento 01: silencia con un toque y despliega el volumen al pasar
+const deslizador = $<HTMLInputElement>(".deslizador");
+const TRAZO =
+  'fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"';
 function mostrarSonido() {
-  const apagado = sonido.silenciado();
-  botonSonido.textContent = apagado ? "Sound off" : "Sound on";
-  // para lectores de pantalla el nombre no cambia: el estado lo dice aria-pressed
-  botonSonido.setAttribute("aria-label", "Sound");
-  botonSonido.setAttribute("aria-pressed", String(!apagado));
+  const activo = !sonido.silenciado();
+  const ondas = activo
+    ? `<path d="M15.5 9.5a3.5 3.5 0 0 1 0 5" ${TRAZO}/><path d="M18 7a7 7 0 0 1 0 10" ${TRAZO}/>`
+    : `<path d="M16 9.5l5 5M21 9.5l-5 5" ${TRAZO}/>`;
+  botonSonido.innerHTML = `<svg viewBox="0 0 24 24"><path d="M4.5 9.5h3l4.5-4v13l-4.5-4h-3z" ${TRAZO}/>${ondas}</svg>`;
+  botonSonido.setAttribute("aria-pressed", String(activo));
+  const v = activo ? sonido.volumen() : 0;
+  deslizador.value = String(v);
+  deslizador.style.setProperty("--v", `${v * 100}%`);
 }
 botonSonido.addEventListener("click", () => {
   sonido.alternar();
+  mostrarSonido();
+});
+deslizador.addEventListener("input", () => {
+  sonido.fijarVolumen(Number(deslizador.value));
   mostrarSonido();
 });
 mostrarSonido();

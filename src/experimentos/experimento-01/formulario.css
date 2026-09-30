@@ -6,6 +6,8 @@
 @import "@fontsource/noto-sans/400.css";
 @import "@fontsource/noto-sans/600.css";
 @import "@fontsource/noto-sans/700.css";
+@import "@fontsource/public-sans/400.css";
+@import "@fontsource/public-sans/500.css";
 
 :root {
   --gris-6: #262423;
@@ -48,6 +50,7 @@ body {
 #escena {
   position: fixed;
   inset: 0;
+  visibility: hidden;
 }
 #escena canvas {
   display: block;
@@ -379,40 +382,183 @@ hr {
   outline-offset: 2px;
 }
 
-/* el cromo: fuera de la pieza */
+/* el cromo: el mismo del primer Experimento 01, con la tipografía y los grises del sitio */
+.cromo,
+.credito {
+  font: 13px/1.4 "Public Sans", system-ui, sans-serif;
+  color: #75756c;
+  -webkit-font-smoothing: antialiased;
+  z-index: 2;
+}
 .cromo {
   position: fixed;
-  top: 12px;
-  left: 12px;
-  right: 12px;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: space-between;
-  z-index: 2;
-  font: 700 14px/1 "Noto Sans", sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  align-items: center;
+  padding: 20px 24px;
+  pointer-events: none;
 }
-.cromo a,
+
+.cromo > * {
+  pointer-events: auto;
+}
+
+.volver,
 .cromo button {
-  all: unset;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  margin: -8px -10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-decoration: none;
   cursor: pointer;
-  color: var(--verde-6); /* 6,4:1 sobre el crema (el verde 5 daba 4,1:1) */
-  padding: 8px;
+  transition: color 150ms ease-out;
 }
-.cromo a:focus-visible,
+
+.volver:hover,
+.cromo button:hover {
+  color: #1f1f1b;
+}
+
+.volver:focus-visible,
 .cromo button:focus-visible {
-  outline: 2px solid var(--verde-5);
+  outline: 2px solid #66794a;
+  outline-offset: 2px;
 }
-.aviso {
+
+.credito {
   position: fixed;
-  bottom: 10px;
-  left: 16px;
-  right: 16px;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  margin: 0;
   text-align: center;
-  font: 12px/1.4 "Noto Sans", sans-serif;
-  color: #6b6b62; /* 4,9:1 sobre el crema */
-  z-index: 2;
+  font-size: 12px;
+  color: #6b6b62; /* el del sitio era #9a9a8f: 2,6:1 sobre el crema no se lee */
+  pointer-events: none;
 }
+
+.sonido {
+  display: grid;
+  place-items: center;
+}
+
+.sonido svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.lugar {
+  display: flex;
+  gap: 20px;
+  align-items: baseline;
+}
+
+.nombre {
+  color: #1f1f1b;
+  font-weight: 500;
+}
+
+.tipo {
+  margin-left: 8px;
+  color: #9a9a8f;
+  font-weight: 400;
+}
+
+.volumen {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -6px -8px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  transition: background-color 200ms ease-out;
+}
+
+.volumen:hover,
+.volumen:focus-within {
+  background: rgb(31 31 27 / 0.05);
+}
+
+.deslizador {
+  --v: 80%;
+  appearance: none;
+  width: 0;
+  height: 18px;
+  margin: 0;
+  background: transparent;
+  opacity: 0;
+  cursor: pointer;
+  transition:
+    width 260ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 180ms ease-out;
+}
+
+.volumen:hover .deslizador,
+.volumen:focus-within .deslizador {
+  width: 84px;
+  opacity: 1;
+}
+
+.deslizador::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, #1f1f1b var(--v), rgb(31 31 27 / 0.15) var(--v));
+}
+
+.deslizador::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, #1f1f1b var(--v), rgb(31 31 27 / 0.15) var(--v));
+}
+
+.deslizador::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: #1f1f1b;
+  box-shadow: 0 0 0 3px #efebe1;
+  transition: transform 150ms ease-out;
+}
+
+.deslizador::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: #1f1f1b;
+  box-shadow: 0 0 0 3px #efebe1;
+}
+
+.deslizador:active::-webkit-slider-thumb {
+  transform: scale(1.25);
+}
+
+.deslizador:focus-visible {
+  outline: none;
+}
+
+.deslizador:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #66794a;
+  outline-offset: 2px;
+}
+@media (max-width: 600px) {
+  .cromo {
+    padding: 16px;
+  }
+  .tipo {
+    display: none;
+  }
+}
+
 .solo-lector {
   position: absolute;
   width: 1px;

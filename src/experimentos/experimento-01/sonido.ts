@@ -92,18 +92,33 @@ export function eventosEntre(tabla: [number, Sonido][], desde: number, hasta: nu
 }
 
 const CLAVE = "experimento-01:silencio";
+const CLAVE_VOLUMEN = "experimento-01:volumen";
 
 export function crearSonido(almacen: Storage | null, tabla: [number, Sonido][]) {
   let ac: AudioContext | null = null;
   let salida: GainNode | null = null;
   const buffers = new Map<string, AudioBuffer>();
-  let apagado = (() => {
+  const leer = (clave: string) => {
     try {
-      return almacen?.getItem(CLAVE) === "1";
+      return almacen?.getItem(clave) ?? null;
     } catch {
-      return false;
+      return null;
     }
-  })();
+  };
+  const guardar = (clave: string, valor: string) => {
+    try {
+      almacen?.setItem(clave, valor);
+    } catch {
+      // sin almacenamiento, la preferencia dura solo esta visita
+    }
+  };
+  let apagado = leer(CLAVE) === "1";
+  const guardado = Number.parseFloat(leer(CLAVE_VOLUMEN) ?? "");
+  let volumen = Number.isFinite(guardado) ? Math.min(1, Math.max(0, guardado)) : 0.8;
+  // silenciar y el volumen van por la ganancia de salida: cortan en seco aunque algo esté sonando
+  const aplicar = () => {
+    if (salida) salida.gain.value = apagado ? 0 : volumen;
+  };
   const archivos = [...new Set(tabla.flatMap(([, s]) => s.archivos))];
   // se bajan al cargar la página; se decodifican con el primer gesto (política de autoplay)
   const crudos = new Map(
@@ -121,7 +136,7 @@ export function crearSonido(almacen: Storage | null, tabla: [number, Sonido][]) 
     comp.threshold.value = -12;
     comp.ratio.value = 3;
     salida = ac.createGain();
-    salida.gain.value = 0.8;
+    aplicar();
     salida.connect(comp).connect(ac.destination);
     const contexto = ac;
     await Promise.all(
@@ -160,14 +175,20 @@ export function crearSonido(almacen: Storage | null, tabla: [number, Sonido][]) 
       for (const s of eventosEntre(tabla, desde, hasta)) tocar(s);
     },
     silenciado: () => apagado,
+    volumen: () => volumen,
     alternar() {
       apagado = !apagado;
-      try {
-        almacen?.setItem(CLAVE, apagado ? "1" : "0");
-      } catch {
-        // sin almacenamiento, la preferencia dura solo esta visita
-      }
+      guardar(CLAVE, apagado ? "1" : "0");
+      aplicar();
       return apagado;
+    },
+    fijarVolumen(v: number) {
+      volumen = v;
+      // mover el volumen es querer escuchar
+      apagado = v === 0;
+      guardar(CLAVE_VOLUMEN, String(v));
+      guardar(CLAVE, apagado ? "1" : "0");
+      aplicar();
     },
   };
 }

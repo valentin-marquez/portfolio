@@ -7,13 +7,21 @@
     <meta name="theme-color" content="#f6f3ea" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>MineCon Registration · Valentín Márquez</title>
+    <!-- en el head y no desde el módulo: sin esto el primer cuadro sale sin estilos -->
+    <link rel="stylesheet" href="/src/experimentos/experimento-01/formulario.css" />
   </head>
   <body>
     <div id="escena" aria-hidden="true"></div>
     <div id="destello" aria-hidden="true"></div>
-    <nav class="cromo" aria-label="Page">
-      <a class="volver" href="/">← Back</a>
-      <button id="sonido" class="sonido" type="button" aria-pressed="true">Sound on</button>
+    <nav class="cromo" aria-label="Controls">
+      <div class="lugar">
+        <a class="volver" href="/">← Back</a>
+        <span class="nombre">MineCon registration <span class="tipo">experiment 01</span></span>
+      </div>
+      <div class="volumen">
+        <input class="deslizador" type="range" min="0" max="1" step="0.01" aria-label="Volume" />
+        <button id="sonido" class="sonido" type="button" aria-pressed="true" aria-label="Sound"></button>
+      </div>
     </nav>
     <main id="registro" class="registro">
       <span class="cinta">Only a few spots left!</span>
@@ -24,11 +32,11 @@
         </div>
         <div>
           <label class="rotulo" for="jugador">Player name</label>
-          <div class="pozo"><input id="jugador" name="jugador" required minlength="3" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" placeholder="Steve" autocomplete="nickname" spellcheck="false" /></div>
+          <div class="pozo"><input id="jugador" name="jugador" required maxlength="16" value="nozz" placeholder="Steve" autocomplete="nickname" spellcheck="false" /></div>
         </div>
         <div>
           <label class="rotulo" for="correo">Email</label>
-          <div class="pozo"><input id="correo" name="correo" type="email" required placeholder="steve@example.com" autocomplete="email" spellcheck="false" /></div>
+          <div class="pozo"><input id="correo" name="correo" type="email" required value="valentin@nozz.skin" placeholder="steve@example.com" autocomplete="email" spellcheck="false" /></div>
         </div>
         <fieldset class="pases">
           <legend class="etiqueta">Pass type</legend>
@@ -56,7 +64,7 @@
         <a class="enlace" href="/">Back to portfolio</a>
       </section>
     </main>
-    <p class="aviso">Unofficial concept. Not affiliated with Mojang or Microsoft.</p>
+    <p class="credito">Unofficial concept. Not affiliated with Mojang or Microsoft.</p>
     <p id="anuncio" class="solo-lector" aria-live="polite"></p>
     <script type="module" src="/src/experimentos/experimento-01/pagina.ts"></script>
   </body>
