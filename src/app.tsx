@@ -18,6 +18,7 @@ import { fijarClima, influenciaScroll } from "./prado/viento";
 import { BordeDifuso } from "./secciones/borde-difuso";
 import { CapaSemillas } from "./secciones/capa-semillas";
 import { Cierre } from "./secciones/cierre";
+import { Experimentos } from "./secciones/experimentos";
 import { Hero } from "./secciones/hero";
 import { Intro } from "./secciones/intro";
 import { Medidor } from "./secciones/medidor";
@@ -196,6 +197,7 @@ export function App() {
             <Hero />
             <Intro />
             <Trabajos />
+            <Experimentos />
             <SobreMi />
             <Cierre />
           </main>
