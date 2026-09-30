@@ -22,7 +22,10 @@ export const triangulo = (x: number, periodo: number) =>
   (periodo * 0.25);
 export const azar = (semilla: number) => {
   let s = semilla | 0;
-  return () => ((s = (Math.imul(s ^ (s >>> 15), 2246822507) + 0x9e3779b9) | 0) >>> 0) / 4294967296;
+  return () => {
+    s = (Math.imul(s ^ (s >>> 15), 2246822507) + 0x9e3779b9) | 0;
+    return (s >>> 0) / 4294967296;
+  };
 };
 /** ruido suave y determinista: suma de senos de frecuencias que no se repiten entre sí (6 a 14 Hz) */
 export const ruido = (t: number, s: number) =>
