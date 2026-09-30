@@ -47,9 +47,10 @@ const FIN_DOM = tiempoReal(VUELVE_DOM);
 // ============ la tarjeta en pantalla ============
 function ajustarTarjeta() {
   // la caja sin escalar: la escala (CSS scale) no cambia offsetHeight
+  const { clientWidth, clientHeight } = document.documentElement;
   registro.style.setProperty(
     "--escala",
-    String(escalaTarjeta(480, registro.offsetHeight, innerWidth, innerHeight)),
+    String(escalaTarjeta(480, registro.offsetHeight, clientWidth, clientHeight)),
   );
 }
 const fuentes = document.fonts.ready.then(() => {
@@ -176,10 +177,11 @@ async function sacarFotos(d: Datos) {
 // ============ el encuadre: la tarjeta 3D calza con la del DOM ============
 function encuadrar() {
   const r = registro.getBoundingClientRect();
+  const alto = contenedor.clientHeight; // el mismo alto que usa el canvas
   const unidadesPorPx = TARJETA.ALTO / r.height;
-  const desfase = (r.y + r.height / 2 - innerHeight / 2) * unidadesPorPx;
+  const desfase = (r.y + r.height / 2 - alto / 2) * unidadesPorPx;
   e.encuadrar(
-    distanciaPara(r.height, innerHeight, 30, TARJETA.ALTO),
+    distanciaPara(r.height, alto, 30, TARJETA.ALTO),
     TARJETA.ELEVA + TARJETA.ALTO / 2 + desfase,
   );
 }
@@ -274,11 +276,13 @@ formulario.addEventListener("submit", (ev) => {
   void transformar(d);
 });
 
-addEventListener("resize", () => {
+// cualquier cambio de tamaño de la ventana (también el primero, al cargar en un teléfono): la tarjeta
+// se reescala y, si está corriendo, el encuadre final vuelve a calzar con ella en su nueva posición
+new ResizeObserver(() => {
   ajustarTarjeta();
   render?.ajustar();
-  if (corriendo) encuadrar(); // el encuadre final vuelve a calzar con la tarjeta en su nueva posición
-});
+  if (corriendo) encuadrar();
+}).observe(document.documentElement);
 
 // ============ revisión: ?t=6 congela ese instante (para las capturas del Playwright MCP) ============
 if (params.has("t") && render) {

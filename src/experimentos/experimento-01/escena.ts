@@ -505,7 +505,7 @@ export function crearEscena(tex: Texturas & Fotos): Escena {
   }
 
   // cámara: camino suave + temblor por trauma (Eiserloh) + golpe de zoom en la ignición
-  type Plano = [number, [number, number, number], [number, number, number]];
+  type Plano = [number, [number, number, number], [number, number, number], boolean?];
   let inicio: [[number, number, number], [number, number, number]] = [
     [0, ELEVA + 21.5, ZT + 104],
     [0, ELEVA + 21.5, ZT],
@@ -515,14 +515,15 @@ export function crearEscena(tex: Texturas & Fotos): Escena {
     // quieta hasta que entra el canvas: el acercamiento empieza con la carga
     [0.55, ...inicio],
     [1.15, [0, inicio[0][1], inicio[0][2] - 4], inicio[1]],
-    [2.0, [-16, ELEVA + 20, ZT + 110], [0, ELEVA + 17, ZT]],
-    [2.9, [-4, 34, 128], [0, 27, 2]],
-    [3.9, [30, 31, 120], [0, 23, 2]],
-    [6.0, [22, 25, 112], [0, 19, 2]],
-    [10.2, [16, 24, 128], [0, 17, 8]],
-    [11.6, [12, 24, 122], [0, 19, 10]],
-    [12.5, [2, 28, 132], [-12, 14, 8]],
-    [13.3, [-4, 30, 132], [-8, 18, 10]],
+    // los planos del gólem (true): en pantallas verticales se alejan para que entre de ancho
+    [2.0, [-16, ELEVA + 20, ZT + 110], [0, ELEVA + 17, ZT], true],
+    [2.9, [-4, 34, 128], [0, 27, 2], true],
+    [3.9, [30, 31, 120], [0, 23, 2], true],
+    [6.0, [22, 25, 112], [0, 19, 2], true],
+    [10.2, [16, 24, 128], [0, 17, 8], true],
+    [11.6, [12, 24, 122], [0, 19, 10], true],
+    [12.5, [2, 28, 132], [-12, 14, 8], true],
+    [13.3, [-4, 30, 132], [-8, 18, 10], true],
     [ENCAJA, ...inicio],
     [15.0, ...inicio],
   ];
@@ -531,8 +532,21 @@ export function crearEscena(tex: Texturas & Fotos): Escena {
     const lista = planos();
     let i = 0;
     while (i < lista.length - 2 && p > (lista[i + 1]?.[0] ?? 0)) i++;
-    const [t0, p0, m0] = lista[i] as Plano;
-    const [t1, p1, m1] = lista[i + 1] as Plano;
+    // pensados para pantalla horizontal: con aspecto menor a 0,85 la cámara se aleja en proporción
+    const lejos = Math.max(1, 0.85 / camara.aspect);
+    const alejar = ([t, pos, mira, golem]: Plano): Plano => [
+      t,
+      golem
+        ? (pos.map((v, j) => (mira[j] ?? 0) + (v - (mira[j] ?? 0)) * lejos) as [
+            number,
+            number,
+            number,
+          ])
+        : pos,
+      mira,
+    ];
+    const [t0, p0, m0] = alejar(lista[i] as Plano);
+    const [t1, p1, m1] = alejar(lista[i + 1] as Plano);
     const k = tramo(t0, t1, p);
     camara.position.set(
       ...(p0.map((v, j) => THREE.MathUtils.lerp(v, p1[j] ?? v, k)) as [number, number, number]),

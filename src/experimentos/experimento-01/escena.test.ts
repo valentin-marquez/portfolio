@@ -79,3 +79,48 @@ describe("fotos", () => {
     expect(frente()).toBe(gracias);
   });
 });
+
+describe("teléfono vertical", () => {
+  function cajaEnPantalla(e: ReturnType<typeof nueva>, t: number) {
+    e.pose(t);
+    e.escena.updateMatrixWorld(true);
+    e.camara.updateMatrixWorld(); // la cámara no está en la escena: en el navegador la actualiza el renderer
+    const caja = new THREE.Box3();
+    for (const n of ["piernaD", "piernaI", "torso", "brazoD", "brazoI", "cabeza"]) {
+      // solo la caja de cada parte (la flecha y la amapola escondidas también cuentan para Box3)
+      const malla = e.escena.getObjectByName(n)?.children[0];
+      if (malla) caja.expandByObject(malla, true);
+    }
+    let minX = Infinity;
+    let maxX = -Infinity;
+    for (const x of [caja.min.x, caja.max.x])
+      for (const y of [caja.min.y, caja.max.y])
+        for (const z of [caja.min.z, caja.max.z]) {
+          const p = new THREE.Vector3(x, y, z).project(e.camara);
+          minX = Math.min(minX, p.x);
+          maxX = Math.max(maxX, p.x);
+        }
+    return { minX, maxX };
+  }
+
+  it("con aspecto 374 × 769 el gólem entra completo de ancho mientras camina y ofrece la flor", () => {
+    const e = nueva();
+    e.camara.aspect = 374 / 769;
+    e.camara.updateProjectionMatrix();
+    for (const t of [6.5, 9, 11]) {
+      const { minX, maxX } = cajaEnPantalla(e, t);
+      expect(minX, `t=${t}`).toBeGreaterThan(-1);
+      expect(maxX, `t=${t}`).toBeLessThan(1);
+    }
+  });
+
+  it("en pantalla horizontal la cámara no cambia", () => {
+    const a = nueva();
+    const b = nueva();
+    a.camara.aspect = 1.6;
+    b.camara.aspect = 1.2;
+    a.pose(6.5);
+    b.pose(6.5);
+    expect(a.camara.position.distanceTo(b.camara.position)).toBeLessThan(1e-9);
+  });
+});

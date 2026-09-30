@@ -18,10 +18,15 @@ export function crearRender(
   render.shadowMap.type = THREE.PCFShadowMap; // la variante suave ya no existe en r186
   contenedor.append(render.domElement);
 
+  // el canvas ocupa su contenedor por CSS; el tamaño se mide ahí (en teléfonos innerWidth puede
+  // quedar viejo mientras el navegador acomoda la ventana)
   function ajustar() {
-    e.camara.aspect = innerWidth / innerHeight;
+    const ancho = contenedor.clientWidth;
+    const alto = contenedor.clientHeight;
+    if (!ancho || !alto) return;
+    e.camara.aspect = ancho / alto;
     e.camara.updateProjectionMatrix();
-    render.setSize(innerWidth, innerHeight);
+    render.setSize(ancho, alto, false);
   }
   ajustar();
 
