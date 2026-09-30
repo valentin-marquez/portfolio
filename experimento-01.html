@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Experiment 01: a Minecraft-style registration form that assembles into an iron golem." />
+    <meta name="theme-color" content="#f6f3ea" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>MineCon Registration · Valentín Márquez</title>
+  </head>
+  <body>
+    <div id="escena" aria-hidden="true"></div>
+    <div id="destello" aria-hidden="true"></div>
+    <nav class="cromo" aria-label="Page">
+      <a class="volver" href="/">← Back</a>
+      <button id="sonido" class="sonido" type="button" aria-pressed="true">Sound on</button>
+    </nav>
+    <main id="registro" class="registro">
+      <span class="cinta">Only a few spots left!</span>
+      <form class="pedido" novalidate>
+        <div>
+          <h1>MineCon 2026 Registration</h1>
+          <div class="chips"><span>Saturday, Nov 14</span><span>Sunday, Nov 15</span><span>Santiago, Chile</span></div>
+        </div>
+        <div>
+          <label class="rotulo" for="jugador">Player name</label>
+          <div class="pozo"><input id="jugador" name="jugador" required minlength="3" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" placeholder="Steve" autocomplete="nickname" spellcheck="false" /></div>
+        </div>
+        <div>
+          <label class="rotulo" for="correo">Email</label>
+          <div class="pozo"><input id="correo" name="correo" type="email" required placeholder="steve@example.com" autocomplete="email" spellcheck="false" /></div>
+        </div>
+        <fieldset class="pases">
+          <legend class="etiqueta">Pass type</legend>
+          <label class="pase"><input type="radio" name="pase" value="general" checked /><span class="radio"></span><b>General pass</b><span class="precio">Free</span></label>
+          <label class="pase"><input type="radio" name="pase" value="creador" /><span class="radio"></span><b>Creator pass</b><span class="precio">$14.99</span></label>
+        </fieldset>
+        <label class="casilla"><input type="checkbox" name="noticias" checked /><i></i>Send me Minecraft news</label>
+        <hr />
+        <button class="notched" type="submit"><span>Register ›</span></button>
+        <p class="enlace" aria-hidden="true"><svg viewBox="0 0 7 7" shape-rendering="crispEdges" fill="currentColor"><rect width="3" height="3" /><rect x="4" width="3" height="3" /><rect y="4" width="3" height="3" /><rect x="4" y="4" width="1" height="1" /><rect x="6" y="6" width="1" height="1" /><rect x="5" y="5" width="1" height="1" /></svg>Redeem an invite code</p>
+      </form>
+      <section class="gracias" hidden>
+        <div>
+          <h1>Thanks for registering!</h1>
+          <div class="chips"><span>Saturday, Nov 14</span><span>Sunday, Nov 15</span><span>Santiago, Chile</span></div>
+        </div>
+        <p>See you at MineCon, <b data-jugador>Steve</b>. We sent your pass to <b data-correo class="correo">steve@example.com</b>. Show it at the entrance.</p>
+        <div>
+          <span class="etiqueta">Your pass</span>
+          <div class="pase si"><span class="radio"></span><b data-pase>General pass</b><span class="numero" data-numero>#000417</span></div>
+        </div>
+        <div class="recuerdo"><span class="casillero"><img src="/experimento-01/amapola.png" alt="" /></span>The golem left you a poppy. Take good care of it.</div>
+        <hr />
+        <button class="notched otra" type="button"><span>Register another player ›</span></button>
+        <a class="enlace" href="/">Back to portfolio</a>
+      </section>
+    </main>
+    <p class="aviso">Unofficial concept. Not affiliated with Mojang or Microsoft.</p>
+    <p id="anuncio" class="solo-lector" aria-live="polite"></p>
+    <script type="module" src="/src/experimentos/experimento-01/pagina.ts"></script>
+  </body>
+</html>
