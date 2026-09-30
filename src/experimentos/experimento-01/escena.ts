@@ -84,7 +84,34 @@ const TONOS = {
 };
 const MAX = 500;
 
-export function crearEscena(tex: Texturas & Fotos): Escena {
+function sombraRedonda() {
+  const c = typeof document === "undefined" ? null : document.createElement("canvas");
+  let mapa: THREE.Texture | null = null;
+  if (c) {
+    c.width = c.height = 64;
+    const x = c.getContext("2d");
+    if (x) {
+      const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g.addColorStop(0, "rgba(40,32,20,0.9)");
+      g.addColorStop(0.7, "rgba(40,32,20,0.55)");
+      g.addColorStop(1, "rgba(40,32,20,0)");
+      x.fillStyle = g;
+      x.fillRect(0, 0, 64, 64);
+      mapa = new THREE.CanvasTexture(c);
+    }
+  }
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(32, 32),
+    new THREE.MeshBasicMaterial({ map: mapa, transparent: true, depthWrite: false }),
+  );
+  m.name = "sombra";
+  m.rotation.x = -Math.PI / 2;
+  return m;
+}
+
+/** sombras: false en teléfonos. Las proyectadas son el 90 % del costo de cada cuadro; en su lugar va
+ la sombra redonda que Minecraft dibuja bajo cada entidad */
+export function crearEscena(tex: Texturas & Fotos, { sombras = true } = {}): Escena {
   const escena = new THREE.Scene();
   escena.background = new THREE.Color("#f6f3ea"); // el fondo del portafolio
   escena.fog = new THREE.Fog("#f6f3ea", 150, 420); // el piso se disuelve en el fondo, como el prado
@@ -92,7 +119,7 @@ export function crearEscena(tex: Texturas & Fotos): Escena {
   escena.add(new THREE.HemisphereLight("#fffaf0", "#b9ae94", 2.0));
   const sol = new THREE.DirectionalLight("#ffffff", 2.4);
   sol.position.set(40, 90, 70);
-  sol.castShadow = true;
+  sol.castShadow = sombras;
   sol.shadow.mapSize.set(2048, 2048);
   Object.assign(sol.shadow.camera, { left: -70, right: 50, top: 80, bottom: -20, far: 300 });
   escena.add(sol);
@@ -112,6 +139,9 @@ export function crearEscena(tex: Texturas & Fotos): Escena {
   const golem = crearGolem(tex);
   const { raiz, partes, ojos, matOjo, matHierro, matAmapola, amapola, flecha } = golem;
   escena.add(raiz);
+  // la sombra de entidad de Minecraft: un círculo oscuro en el piso, de un bloque de radio para el gólem
+  const sombra = sombras ? null : sombraRedonda();
+  if (sombra) escena.add(sombra);
   const fotos = { formulario: tex.formulario, gracias: tex.gracias };
   const matFoto = new THREE.MeshBasicMaterial({ map: fotos.formulario });
 
@@ -593,6 +623,11 @@ export function crearEscena(tex: Texturas & Fotos): Escena {
     const suelo = tramo(1.6, 2.4, p) * (1 - tramo(13.6, 14.4, p));
     (piso.material as THREE.Material).opacity = suelo;
     matRejilla.opacity = suelo;
+    if (sombra) {
+      sombra.visible = raiz.visible && p > 2.0;
+      sombra.position.set(raiz.position.x, 0.08, raiz.position.z);
+      (sombra.material as THREE.MeshBasicMaterial).opacity = 0.5 * tramo(2.0, 2.45, p);
+    }
     poseCamara(p, t);
   }
 

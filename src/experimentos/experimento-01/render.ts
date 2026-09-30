@@ -24,6 +24,7 @@ export function crearRender(
     const ancho = contenedor.clientWidth;
     const alto = contenedor.clientHeight;
     if (!ancho || !alto) return;
+    render.setPixelRatio(Math.min(devicePixelRatio, 2));
     e.camara.aspect = ancho / alto;
     e.camara.updateProjectionMatrix();
     render.setSize(ancho, alto, false);

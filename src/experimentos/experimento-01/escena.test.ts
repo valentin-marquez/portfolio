@@ -124,3 +124,29 @@ describe("teléfono vertical", () => {
     expect(a.camara.position.distanceTo(b.camara.position)).toBeLessThan(1e-9);
   });
 });
+
+describe("sombras en teléfonos", () => {
+  it("sin sombras proyectadas, el gólem lleva la sombra redonda de Minecraft que lo sigue", () => {
+    const e = crearEscena(
+      { hierro: tex(), amapola: tex(), flecha: tex(), formulario: tex(), gracias: tex() },
+      { sombras: false },
+    );
+    let proyecta = false;
+    e.escena.traverse((o) => {
+      if ((o as THREE.DirectionalLight).isDirectionalLight && o.castShadow) proyecta = true;
+    });
+    expect(proyecta).toBe(false);
+    const sombra = e.escena.getObjectByName("sombra");
+    e.pose(9.5); // caminando hacia la cámara
+    const golem = e.escena.getObjectByName("golem");
+    expect(sombra?.visible).toBe(true);
+    expect(sombra?.position.z).toBeCloseTo(golem?.position.z ?? Number.NaN, 6);
+    e.pose(14.9); // ya no hay gólem
+    expect(sombra?.visible).toBe(false);
+  });
+
+  it("con sombras proyectadas no hay sombra redonda", () => {
+    const e = nueva();
+    expect(e.escena.getObjectByName("sombra")).toBeUndefined();
+  });
+});

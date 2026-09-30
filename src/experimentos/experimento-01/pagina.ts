@@ -69,13 +69,17 @@ function pixelada(url: string) {
   t.generateMipmaps = false;
   return t;
 }
-const e = crearEscena({
-  hierro: pixelada("/experimento-01/iron_golem.png"),
-  amapola: pixelada("/experimento-01/amapola.png"),
-  flecha: pixelada("/experimento-01/flecha.png"),
-  formulario: new THREE.Texture(),
-  gracias: new THREE.Texture(),
-});
+const e = crearEscena(
+  {
+    hierro: pixelada("/experimento-01/iron_golem.png"),
+    amapola: pixelada("/experimento-01/amapola.png"),
+    flecha: pixelada("/experimento-01/flecha.png"),
+    formulario: new THREE.Texture(),
+    gracias: new THREE.Texture(),
+  },
+  // en pantallas táctiles, la sombra redonda de Minecraft en vez de sombras proyectadas (90 % del costo)
+  { sombras: matchMedia("(pointer: fine)").matches },
+);
 let render: Render | null = null;
 try {
   render = crearRender(contenedor, e, destello, params.has("sin-webgl"));
@@ -278,11 +282,13 @@ formulario.addEventListener("submit", (ev) => {
 
 // cualquier cambio de tamaño de la ventana (también el primero, al cargar en un teléfono): la tarjeta
 // se reescala y, si está corriendo, el encuadre final vuelve a calzar con ella en su nueva posición
-new ResizeObserver(() => {
+const tamano = new ResizeObserver(() => {
   ajustarTarjeta();
   render?.ajustar();
   if (corriendo) encuadrar();
-}).observe(document.documentElement);
+});
+tamano.observe(document.documentElement);
+tamano.observe(contenedor);
 
 // ============ revisión: ?t=6 congela ese instante (para las capturas del Playwright MCP) ============
 if (params.has("t") && render) {
