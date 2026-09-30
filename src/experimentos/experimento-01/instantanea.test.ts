@@ -23,3 +23,23 @@ describe("instantanea", () => {
     );
   });
 });
+
+describe("urlsDeFuentes", () => {
+  it("toma solo los subconjuntos latinos que usa la página, no latin-ext ni otros alfabetos", async () => {
+    const { urlsDeFuentes } = await import("./instantanea");
+    const css = [
+      'src: url("/node_modules/@fontsource/noto-sans/files/noto-sans-latin-400-normal.woff2") format("woff2")',
+      'src: url(/node_modules/@fontsource/noto-sans/files/noto-sans-latin-ext-400-normal.woff2) format("woff2")',
+      "src: url('/node_modules/@fontsource/noto-sans/files/noto-sans-cyrillic-400-normal.woff2')",
+      'src: url("/node_modules/@fontsource/jersey-10/files/jersey-10-latin-400-normal.woff2")',
+      // en el build llevan hash
+      "src: url(/assets/pixelify-sans-latin-400-normal-Bq3xZ9aa.woff2) format(woff2)",
+      "src: url(/assets/pixelify-sans-latin-ext-400-normal-C1d2E3ff.woff2) format(woff2)",
+    ].join("\n");
+    expect(urlsDeFuentes(css)).toEqual([
+      'url("/node_modules/@fontsource/noto-sans/files/noto-sans-latin-400-normal.woff2")',
+      'url("/node_modules/@fontsource/jersey-10/files/jersey-10-latin-400-normal.woff2")',
+      "url(/assets/pixelify-sans-latin-400-normal-Bq3xZ9aa.woff2)",
+    ]);
+  });
+});

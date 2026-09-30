@@ -150,3 +150,11 @@ describe("sombras en teléfonos", () => {
     expect(e.escena.getObjectByName("sombra")).toBeUndefined();
   });
 });
+
+describe("precompilado", () => {
+  it("las partículas nacen con color por instancia: el shader no se recompila en el primer golpe", () => {
+    const e = nueva();
+    const particulas = e.escena.getObjectByName("particulas") as THREE.InstancedMesh;
+    expect(particulas.instanceColor).not.toBeNull();
+  });
+});

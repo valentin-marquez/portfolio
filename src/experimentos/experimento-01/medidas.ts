@@ -31,3 +31,17 @@ export function distanciaPara(
   const visible = (altoMundo * altoVentanaPx) / altoTarjetaPx;
   return visible / 2 / Math.tan((fovGrados * Math.PI) / 360);
 }
+
+/** segundos que avanza el reloj en un cuadro: nunca hacia atrás y con tope de 50 ms (al volver de una
+ pestaña oculta sigue donde iba, sin saltarse ni repetir sonidos) */
+export function pasoReloj(ahora: number, antes: number): number {
+  return Math.min(0.05, Math.max(0, (ahora - antes) / 1000));
+}
+
+/** la promesa, o null si falla o no llega a tiempo: la página nunca queda esperando para siempre */
+export function conPlazo<T>(promesa: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    promesa.catch(() => null),
+    new Promise<null>((ok) => setTimeout(() => ok(null), ms)),
+  ]);
+}

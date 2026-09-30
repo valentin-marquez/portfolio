@@ -35,3 +35,21 @@ describe("distanciaPara", () => {
     expect((43 / visible) * 900).toBeCloseTo(686, 6);
   });
 });
+
+describe("pasoReloj", () => {
+  it("nunca retrocede y tiene tope de 50 ms", async () => {
+    const { pasoReloj } = await import("./medidas");
+    expect(pasoReloj(100, 116)).toBe(0); // el timestamp del cuadro puede ser anterior a performance.now()
+    expect(pasoReloj(116, 100)).toBeCloseTo(0.016, 6);
+    expect(pasoReloj(9000, 100)).toBe(0.05); // al volver de una pestaña oculta
+  });
+});
+
+describe("conPlazo", () => {
+  it("devuelve null si la promesa no llega a tiempo, y el valor si llega", async () => {
+    const { conPlazo } = await import("./medidas");
+    expect(await conPlazo(new Promise<number>(() => {}), 20)).toBeNull();
+    expect(await conPlazo(Promise.resolve(7), 20)).toBe(7);
+    expect(await conPlazo(Promise.reject(new Error("x")), 20)).toBeNull();
+  });
+});

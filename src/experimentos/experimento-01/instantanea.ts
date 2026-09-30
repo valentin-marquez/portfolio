@@ -26,6 +26,12 @@ async function aDataUrl(url: string): Promise<string> {
   });
 }
 
+/** las fuentes que la página usa de verdad: el subconjunto latino básico (no latin-ext ni otros
+ alfabetos, que pesan cientos de KB y nunca se bajan en una página en inglés) */
+export function urlsDeFuentes(css: string): string[] {
+  return [...new Set(css.match(/url\(["']?[^"')]+-latin-\d+-normal[^"')]*\.woff2["']?\)/g) ?? [])];
+}
+
 /** el CSS de la página con las fuentes woff2 y las imágenes incrustadas: dentro de un SVG no se baja nada */
 export async function leerCss(): Promise<string> {
   let css = "";
@@ -36,12 +42,13 @@ export async function leerCss(): Promise<string> {
       // hojas de otro origen: esta página no tiene
     }
   }
-  // solo los subconjuntos latinos: los demás (cirílico, griego...) no se usan y pesan cientos de KB
-  const urls = [...new Set(css.match(/url\(["']?[^"')]+latin[^"')]*\.woff2["']?\)/g) ?? [])];
-  for (const u of urls) {
-    const limpia = u.slice(4, -1).replace(/["']/g, "");
-    css = css.replaceAll(u, `url("${await aDataUrl(new URL(limpia, location.href).href)}")`);
-  }
+  const urls = urlsDeFuentes(css);
+  const datos = await Promise.all(
+    urls.map((u) => aDataUrl(new URL(u.slice(4, -1).replace(/["']/g, ""), location.href).href)),
+  );
+  urls.forEach((u, i) => {
+    css = css.replaceAll(u, `url("${datos[i]}")`);
+  });
   return css;
 }
 

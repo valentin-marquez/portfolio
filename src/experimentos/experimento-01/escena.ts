@@ -248,10 +248,15 @@ export function crearEscena(tex: Texturas & Fotos, { sombras = true } = {}): Esc
     new THREE.MeshLambertMaterial({ color: "#ffffff" }),
     MAX,
   );
+  particulas.name = "particulas";
   particulas.frustumCulled = false;
   particulas.castShadow = true;
   escena.add(particulas);
   const color = new THREE.Color();
+  // con color por instancia desde el principio: si aparece recién en el primer golpe, el shader se
+  // recompila justo ahí (en el teléfono, un tirón en las piernas contra el piso)
+  particulas.setColorAt(0, color.set("#ffffff"));
+  particulas.count = 0;
 
   // la que se cae con el flechazo y después vuela al casillero de la tarjeta de gracias
   const amapolaSuelta = cruzAmapola(matAmapola, 8);

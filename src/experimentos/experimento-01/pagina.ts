@@ -11,7 +11,7 @@ import "./formulario.css";
 import { crearEscena } from "./escena";
 import { TARJETA } from "./golem";
 import { fijarEstado, incrustarImagenes, instantanea, leerCss } from "./instantanea";
-import { descifrar, distanciaPara, escalaTarjeta } from "./medidas";
+import { conPlazo, descifrar, distanciaPara, escalaTarjeta, pasoReloj } from "./medidas";
 import { crearRender, type Render } from "./render";
 import { crearSonido, suena } from "./sonido";
 import { azar, SWAP, tiempoReal, VUELVE_DOM } from "./tiempo";
@@ -54,10 +54,18 @@ function ajustarTarjeta() {
   );
 }
 const fuentes = document.fonts.ready.then(() => {
-  // la tarjeta de gracias mide lo mismo que el formulario
-  registro.style.setProperty("--alto-tarjeta", `${formulario.getBoundingClientRect().height}px`);
+  // la tarjeta de gracias mide lo mismo que el formulario, sin la escala de pantallas chicas (que
+  // puede haberse aplicado antes de que carguen las fuentes)
+  const escala = Number(registro.style.getPropertyValue("--escala")) || 1;
+  registro.style.setProperty(
+    "--alto-tarjeta",
+    `${formulario.getBoundingClientRect().height / escala}px`,
+  );
   ajustarTarjeta();
 });
+
+// el CSS con las fuentes incrustadas, una sola vez: al enviar ya está listo
+const css = fuentes.then(leerCss);
 
 // ============ la escena: se arma al cargar, así el cambio al canvas no se traba ============
 const cargador = new THREE.TextureLoader();
@@ -71,9 +79,9 @@ function pixelada(url: string) {
 }
 const e = crearEscena(
   {
-    hierro: pixelada("/experimento-01/iron_golem.png"),
-    amapola: pixelada("/experimento-01/amapola.png"),
-    flecha: pixelada("/experimento-01/flecha.png"),
+    hierro: pixelada("/recursos/experimento-01/iron_golem.png"),
+    amapola: pixelada("/recursos/experimento-01/amapola.png"),
+    flecha: pixelada("/recursos/experimento-01/flecha.png"),
     formulario: new THREE.Texture(),
     gracias: new THREE.Texture(),
   },
@@ -101,6 +109,8 @@ const sonido = crearSonido(almacen, suena(e.paneles.map((x) => x.vuelta[1])));
 function mostrarSonido() {
   const apagado = sonido.silenciado();
   botonSonido.textContent = apagado ? "Sound off" : "Sound on";
+  // para lectores de pantalla el nombre no cambia: el estado lo dice aria-pressed
+  botonSonido.setAttribute("aria-label", "Sound");
   botonSonido.setAttribute("aria-pressed", String(!apagado));
 }
 botonSonido.addEventListener("click", () => {
@@ -156,13 +166,11 @@ async function foto(css: Promise<string>, preparar: (clon: HTMLElement) => void)
   }
 }
 async function sacarFotos(d: Datos) {
-  const css = leerCss();
   const [deFormulario, deGracias] = await Promise.all([
     foto(css, (clon) => {
-      // el formulario con los valores que se escribieron y la cinta ya descifrada
-      fijarEstado(formulario);
-      const campos = clon.querySelector("form.pedido");
-      if (campos) campos.replaceWith(formulario.cloneNode(true));
+      // el clon ya trae lo que se escribió (cloneNode copia value y checked); se fija en sus atributos
+      // para que viaje en el HTML. El formulario de verdad no se toca: su reset() vuelve a vacío
+      fijarEstado(clon);
       const c = clon.querySelector(".cinta");
       if (c) c.textContent = "Pass granted!";
       clon.querySelector(".notched")?.classList.remove("hundido");
@@ -231,15 +239,15 @@ function textoCinta(t: number, r: () => number) {
 
 async function transformar(d: Datos) {
   const r = azar(5);
-  const fotos = sacarFotos(d).catch(() => null);
+  // si las instantáneas no llegan en 3 s (fuentes que no bajan, Safari), fundido directo al gracias
+  const fotos = conPlazo(sacarFotos(d), 3000);
   let t = 0;
   let antes = performance.now();
   let enCanvas = false;
   sonido.sonar(-1, 0); // el clic
   boton.classList.add("hundido");
   const cuadro = async (ahora: number) => {
-    // con el tope de 50 ms, al volver de una pestaña oculta sigue donde iba y no suena todo junto
-    const dt = Math.min(0.05, (ahora - antes) / 1000);
+    const dt = pasoReloj(ahora, antes);
     antes = ahora;
     const previo = t;
     t = Math.min(FIN_DOM, t + dt);
@@ -249,6 +257,8 @@ async function transformar(d: Datos) {
         if (t > 0.42) boton.classList.remove("hundido");
       } else {
         t = SWAP; // espera a las instantáneas si todavía no están
+        cinta.textContent = "Pass granted!";
+        boton.classList.remove("hundido");
         const listas = await fotos;
         if (!listas || !render) return sinAnimacion(d);
         e.fijarFotos(listas.deFormulario, listas.deGracias);
@@ -274,9 +284,10 @@ formulario.addEventListener("submit", (ev) => {
   if (corriendo) return; // Enter o doble clic mientras corre: una sola transformación
   if (!formulario.reportValidity()) return;
   corriendo = true;
+  anuncio.textContent = "Registering…";
   const d = leerDatos();
   if (reducido || !render) return sinAnimacion(d);
-  void sonido.preparar().catch(() => {}); // el clic es el gesto que habilita el audio
+  void sonido.preparar().catch(() => {}); // por si no hubo gesto antes: el clic lo es
   void transformar(d);
 });
 
@@ -289,6 +300,14 @@ const tamano = new ResizeObserver(() => {
 });
 tamano.observe(document.documentElement);
 tamano.observe(contenedor);
+
+// el audio se prepara con el primer gesto (escribir el nombre ya lo es): al apretar Register los
+// sonidos están decodificados y el clic suena
+for (const gesto of ["pointerdown", "keydown"])
+  addEventListener(gesto, () => void sonido.preparar().catch(() => {}), {
+    once: true,
+    capture: true,
+  });
 
 // ============ revisión: ?t=6 congela ese instante (para las capturas del Playwright MCP) ============
 if (params.has("t") && render) {

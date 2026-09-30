@@ -8,7 +8,7 @@ const tabla = suena([13.8, 14.0]);
 describe("sonido", () => {
   it("cada archivo de la tabla existe en public y no sobra ninguno", () => {
     const hay = new Set(
-      readdirSync("public/experimento-01/sonidos").map((f) => f.replace(/\.mp3$/, "")),
+      readdirSync("public/recursos/experimento-01/sonidos").map((f) => f.replace(/\.mp3$/, "")),
     );
     const usados = new Set(tabla.flatMap(([, s]) => s.archivos));
     for (const a of usados) expect(hay.has(a), a).toBe(true);

@@ -109,12 +109,13 @@ export function crearSonido(almacen: Storage | null, tabla: [number, Sonido][]) 
   const crudos = new Map(
     archivos.map((n) => [
       n,
-      fetch(`/experimento-01/sonidos/${n}.mp3`).then((r) => r.arrayBuffer()),
+      fetch(`/recursos/experimento-01/sonidos/${n}.mp3`).then((r) => r.arrayBuffer()),
     ]),
   );
 
   async function preparar() {
-    if (ac) return;
+    // ya creado: solo reanudar (si nació sin gesto válido quedó suspendido hasta el clic)
+    if (ac) return void ac.resume();
     ac = new AudioContext();
     const comp = ac.createDynamicsCompressor();
     comp.threshold.value = -12;
