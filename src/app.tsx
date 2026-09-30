@@ -74,6 +74,12 @@ function latitudSinUbicacion(): number {
 }
 
 export function App() {
+  // al volver de un experimento (/#experimentos) el navegador busca el ancla antes de que React
+  // dibuje la sección: se la busca de nuevo ya montada
+  useEffect(() => {
+    if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
+  }, []);
+
   useEffect(() => {
     // scroll → progreso y velocidad; los prados reciben la velocidad y la acotan ellos mismos
     let yAnterior = window.scrollY;
