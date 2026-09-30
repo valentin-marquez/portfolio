@@ -63,6 +63,9 @@ body {
 .registro {
   position: relative;
   z-index: 1;
+  /* la tarjeta lleva su propia fuente: en la instantánea (un SVG) no hay body del que heredarla */
+  font: 16px/1.5 "Noto Sans", sans-serif;
+  color: var(--crema);
   /* siempre 480 de ancho y la misma proporción: los paneles calzan con el gólem en cualquier
      pantalla. En pantallas chicas se escala entera (pagina.ts fija --escala) */
   width: 480px;
