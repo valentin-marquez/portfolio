@@ -61,6 +61,8 @@ export type Escena = {
   destello(t: number): number;
   /** el encuadre del primer y el último cuadro: distancia de la cámara y altura del centro de la tarjeta */
   encuadrar(distancia: number, alto: number): void;
+  /** las instantáneas del formulario y de la tarjeta de gracias */
+  fijarFotos(formulario: THREE.Texture, gracias: THREE.Texture): void;
 };
 
 const { ALTO, ANCHO, ELEVA, ZT } = TARJETA;
@@ -110,7 +112,8 @@ export function crearEscena(tex: Texturas & Fotos): Escena {
   const golem = crearGolem(tex);
   const { raiz, partes, ojos, matOjo, matHierro, matAmapola, amapola, flecha } = golem;
   escena.add(raiz);
-  const matFoto = new THREE.MeshBasicMaterial({ map: tex.formulario });
+  const fotos = { formulario: tex.formulario, gracias: tex.gracias };
+  const matFoto = new THREE.MeshBasicMaterial({ map: fotos.formulario });
 
   // ============ la tarjeta y sus paneles ============
   const tarjeta = new THREE.Group();
@@ -322,7 +325,7 @@ export function crearEscena(tex: Texturas & Fotos): Escena {
   amapola.matrixWorld.decompose(enMano.p, enMano.q, V(0, 0, 0));
 
   function poseTarjeta(p: number, t: number) {
-    matFoto.map = p > POOF ? tex.gracias : tex.formulario;
+    matFoto.map = p > POOF ? fotos.gracias : fotos.formulario;
     const encajando = 1 + 0.025 * Math.sin(Math.PI * paso(14.2, 14.45, p));
     const tiembla = tramo(0.55, 1.15, p, (k) => k * k) * (1 - tramo(1.15, 1.35, p));
     const k = tramo(0.55, 1.9, p) * (1 - tramo(12.9, 13.7, p)); // al rearmarse vuelve de frente, donde estaba el formulario
@@ -509,6 +512,8 @@ export function crearEscena(tex: Texturas & Fotos): Escena {
   ];
   const planos = (): Plano[] => [
     [0, ...inicio],
+    // quieta hasta que entra el canvas: el acercamiento empieza con la carga
+    [0.55, ...inicio],
     [1.15, [0, inicio[0][1], inicio[0][2] - 4], inicio[1]],
     [2.0, [-16, ELEVA + 20, ZT + 110], [0, ELEVA + 17, ZT]],
     [2.9, [-4, 34, 128], [0, 27, 2]],
@@ -584,5 +589,10 @@ export function crearEscena(tex: Texturas & Fotos): Escena {
     ];
   }
 
-  return { escena, camara, tarjeta, paneles, pose, destello, encuadrar };
+  function fijarFotos(formulario: THREE.Texture, gracias: THREE.Texture) {
+    fotos.formulario = formulario;
+    fotos.gracias = gracias;
+  }
+
+  return { escena, camara, tarjeta, paneles, pose, destello, encuadrar, fijarFotos };
 }

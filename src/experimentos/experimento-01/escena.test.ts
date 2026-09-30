@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import { crearEscena } from "./escena";
-import { FIN } from "./tiempo";
+import { FIN, SWAP } from "./tiempo";
 
 const tex = () => new THREE.Texture();
 const nueva = () =>
@@ -51,5 +51,31 @@ describe("escena", () => {
     e.pose(FIN);
     // queda un resto del temblor del encaje, invisible (menos de una milésima de unidad)
     expect(e.camara.position.distanceTo(inicio)).toBeLessThan(1e-3);
+  });
+});
+
+describe("cambio al canvas", () => {
+  it("hasta que entra el canvas (SWAP) la cámara no se mueve: la tarjeta 3D calza con la del DOM", () => {
+    const e = nueva();
+    e.encuadrar(95.8, 27.5);
+    e.pose(0);
+    const inicio = e.camara.position.clone();
+    e.pose(SWAP);
+    expect(e.camara.position.distanceTo(inicio)).toBeLessThan(1e-9);
+  });
+});
+
+describe("fotos", () => {
+  it("el frente de los paneles muestra el formulario y, después del poof, el gracias", () => {
+    const e = nueva();
+    const formulario = tex();
+    const gracias = tex();
+    e.fijarFotos(formulario, gracias);
+    const malla = e.paneles[0]?.g.children[0] as THREE.Mesh;
+    const frente = () => (malla.material as THREE.MeshBasicMaterial).map;
+    e.pose(1);
+    expect(frente()).toBe(formulario);
+    e.pose(FIN);
+    expect(frente()).toBe(gracias);
   });
 });
