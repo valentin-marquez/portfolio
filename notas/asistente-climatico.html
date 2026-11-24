@@ -27,7 +27,7 @@
       <header class="cabecera">
         <h1>Un modelo de 2B que elige bien</h1>
         <p class="bajada">Cómo ajustamos un modelo chico para que el asistente climático del Ministerio del Medio Ambiente sepa a qué fuente preguntarle cada cosa, corriendo en CPU y sin servicios externos.</p>
-        <p class="datos mono"><time datetime="2026-11-24">24 nov 2026</time><span>5 min de lectura</span><a href="https://github.com/valentin-marquez/asistente-climatico">asistente-climatico ↗</a></p>
+        <p class="datos mono"><time datetime="2026-11-24">24 nov 2026</time><span>5 min de lectura</span><a href="https://github.com/valentin-marquez/asistente-climatico">código ↗</a><a href="https://huggingface.co/valentin-marquez/snaicc-asistente-2b">modelo ↗</a></p>
       </header>
 
       <section id="problema">
@@ -88,28 +88,29 @@ largo   = 4096                         <span class="c"># tokens</span></code></p
       <section id="resultados">
         <h2>Resultados</h2>
         <p>Medimos sobre un <button class="termino" type="button" data-t="ciego" data-uso="150 preguntas de usuarios, escritas por un agente que no vio el código ni las otras preguntas.">conjunto ciego</button> de 150 preguntas. El modelo sin ajustar elegía bien 126 y tardaba hasta 26 segundos en decidir; la primera versión ajustada llegó a 139 y la segunda a 147, con el peor caso bajo un segundo.</p>
-        <p>Después vinieron más versiones, cada una para algo que el registro mostraba que fallaba. Como cada una se probó con preguntas que la anterior nunca vio, los conjuntos se fueron sumando hasta llegar a 940 casos en nueve conjuntos. Todas las versiones se volvieron a medir sobre esos mismos 940, así que se pueden comparar entre sí:</p>
+        <p>Después vinieron más versiones, cada una para algo que se veía fallar. Como cada una se probó con preguntas que la anterior nunca vio, las pruebas se fueron sumando hasta 940 casos en ocho conjuntos, y todas las versiones se volvieron a medir sobre esos mismos 940. Toca un punto para ver qué cambió en esa versión.</p>
         <figure>
-          <div class="caja">
-            <table>
-              <thead><tr><th>Versión</th><th>Qué agregó</th><th class="n">De 940</th></tr></thead>
+          <div class="marco" data-figura="versiones"></div>
+          <figcaption>La 3.3 empezó a redactar además de elegir y la 3.4 sumó una herramienta, y las dos cuestan algunos aciertos. La 3.7 usa los mismos datos que la 3.6, entrenados sin las concesiones de una tarjeta de 8 GB.</figcaption>
+        </figure>
+        <p>Por conjunto, la primera versión, la anterior y la vigente:</p>
+        <figure>
+          <div class="desliza">
+            <table class="comparada">
+              <thead><tr><th></th><th>v1</th><th>v3.6</th><th class="vigente">v3.7</th></tr></thead>
               <tbody>
-                <tr><td>v1</td><td>El primer ajuste</td><td class="n">804</td></tr>
-                <tr><td>v2</td><td>Comuna contra región</td><td class="n">822</td></tr>
-                <tr><td>v3</td><td>Proyecciones por comuna y glosario</td><td class="n">820</td></tr>
-                <tr><td>v3.1</td><td>Pronósticos y despedidas</td><td class="n">829</td></tr>
-                <tr><td>v3.2</td><td>Pedir otra explicación</td><td class="n">872</td></tr>
-                <tr><td>v3.3</td><td>Redacta la frase sobre los datos</td><td class="n">858</td></tr>
-                <tr><td>v3.4</td><td>La Ley Marco como herramienta</td><td class="n">865</td></tr>
-                <tr><td>v3.5</td><td>Seguimientos y fuera de tema</td><td class="n">887</td></tr>
-                <tr><td>v3.6</td><td>Preguntas escritas por perfil</td><td class="n">890</td></tr>
-                <tr class="mejor"><td>v3.7</td><td>Mismos datos, mejor entrenada</td><td class="n">907</td></tr>
+                <tr><th>Preguntas de usuarios<span>5 conjuntos, 750</span></th><td>672</td><td>716</td><td class="vigente gana">724</td></tr>
+                <tr><th>Seguimientos<span>con turno anterior, 80</span></th><td>70</td><td>77</td><td class="vigente gana">79</td></tr>
+                <tr><th>Fuera de tema<span>60</span></th><td>45</td><td>56</td><td class="vigente gana">60</td></tr>
+                <tr><th>Pedir otra explicación<span>50</span></th><td>17</td><td>41</td><td class="vigente gana">44</td></tr>
+                <tr><th>Perfiles no vistos<sup>1</sup><span>90</span></th><td>75</td><td>81</td><td class="vigente gana">85</td></tr>
               </tbody>
             </table>
           </div>
-          <figcaption>Aciertos al elegir herramienta, cada versión sobre los mismos 940 casos.</figcaption>
+          <figcaption>Aciertos al elegir herramienta, decisión en GPU con la lista de herramientas actual. Cada conjunto lo escribió un agente que no vio el código ni los datos de entrenamiento.
+            <span class="nota-pie"><sup>1</sup> <b>Perfiles no vistos:</b> preguntas escritas como las haría un tipo de persona que no aparece en el entrenamiento. Mide si el modelo generaliza, y no entra en los 940.</span></figcaption>
         </figure>
-        <p>La vigente es la 3.7: <strong>907 de 940</strong>, y 85 de 90 en preguntas de perfiles que nunca vio. La 3.8 redactó mejor pero empeoró en los seguimientos, así que no se publicó.</p>
+        <p>La vigente es la 3.7: <strong>907 de 940</strong>. Está publicada en <a href="https://huggingface.co/valentin-marquez/snaicc-asistente-2b">Hugging Face</a> junto a las versiones anteriores. La 3.8 redactó mejor pero empeoró en los seguimientos, así que no se publicó.</p>
       </section>
 
       <footer class="cierre"><a href="/notas/">← todas las notas</a><span class="mono">santiago · nov 2026</span></footer>

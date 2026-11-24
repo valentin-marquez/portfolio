@@ -212,10 +212,72 @@ function figuraVerificar(raiz: HTMLElement) {
   armar();
 }
 
+// ============ fig. 4: aciertos de cada versión sobre los mismos 940 casos ============
+// training/scores.json del repo y la ficha de Hugging Face
+const VERSIONES: [string, number, string][] = [
+  ["v1", 804, "El primer ajuste"],
+  ["v2", 822, "Comuna contra región"],
+  ["v3", 820, "Proyecciones por comuna y glosario"],
+  ["v3.1", 829, "Pronósticos y despedidas"],
+  ["v3.2", 872, "Pedir otra explicación y seguimientos"],
+  ["v3.3", 858, "Aprende a redactar"],
+  ["v3.4", 865, "La Ley Marco como herramienta"],
+  ["v3.5", 887, "Turno anterior y preguntas fuera de tema"],
+  ["v3.6", 890, "Preguntas por perfil profesional"],
+  ["v3.7", 907, "Mismos datos, LoRA de rango 64 y dos épocas"],
+];
+const EJE = [800, 840, 880, 920];
+const alto = (n: number) => 100 - ((n - 800) / 120) * 100;
+
+function figuraVersiones(raiz: HTMLElement) {
+  const x = (i: number) => 4 + (i / (VERSIONES.length - 1)) * 92;
+  const trazo = VERSIONES.map(([, n], i) => `${x(i)},${alto(n)}`).join(" ");
+  raiz.innerHTML = `
+    <div class="marco-cabeza"><b>Aciertos al elegir herramienta</b><span>de 940 casos</span></div>
+    <p class="lectura-version" aria-live="polite"></p>
+    <div class="plano">
+      ${EJE.map((n) => `<i class="guia" style="top:${alto(n)}%"><span>${n}</span></i>`).join("")}
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="${trazo}" pathLength="1" /></svg>
+      ${VERSIONES.map(([v, n], i) => `<button type="button" class="punto" style="left:${x(i)}%;top:${alto(n)}%;--d:${200 + i * 70}ms" aria-label="${v}, ${n} de 940"></button>`).join("")}
+    </div>
+    <div class="eje-x">${VERSIONES.map(([v], i) => `<span style="left:${x(i)}%">${v}</span>`).join("")}</div>`;
+  const puntos = [...raiz.querySelectorAll<HTMLButtonElement>(".punto")];
+  const etiquetas = [...raiz.querySelectorAll(".eje-x span")];
+  const lectura = pieza<HTMLElement>(raiz, ".lectura-version");
+  const elegir = (k: number) => {
+    const fila = VERSIONES[k];
+    if (!fila) return;
+    const [v, n, que] = fila;
+    lectura.replaceChildren(
+      Object.assign(document.createElement("b"), { textContent: `${v} · ${n}` }),
+      ` ${que}`,
+    );
+    for (const [i, p] of puntos.entries()) p.classList.toggle("elegido", i === k);
+    for (const [i, e] of etiquetas.entries()) e.classList.toggle("elegido", i === k);
+  };
+  for (const [i, p] of puntos.entries()) {
+    p.addEventListener("click", () => elegir(i));
+    p.addEventListener("pointerenter", (e) => e.pointerType === "mouse" && elegir(i));
+    p.addEventListener("focus", () => elegir(i));
+  }
+  elegir(VERSIONES.length - 1);
+  // la línea se dibuja y los puntos caen uno tras otro la primera vez que se ve
+  const alVer = new IntersectionObserver(
+    ([e]) => {
+      if (!e?.isIntersecting) return;
+      raiz.classList.add("visto");
+      alVer.disconnect();
+    },
+    { threshold: 0.5 },
+  );
+  alVer.observe(raiz);
+}
+
 const FIGURAS: Record<string, (raiz: HTMLElement) => void> = {
   elegir: figuraElegir,
   camino: figuraCamino,
   verificar: figuraVerificar,
+  versiones: figuraVersiones,
 };
 for (const raiz of document.querySelectorAll<HTMLElement>("[data-figura]")) {
   FIGURAS[raiz.dataset.figura ?? ""]?.(raiz);
