@@ -4,14 +4,17 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
 
-/** páginas que viven en la raíz sin extensión: /experimento-01 sirve experimento-01.html */
-const PAGINAS = ["experimento-01"];
+/** páginas aparte de la portada, sin extensión: /experimento-01 sirve experimento-01.html y
+ *  /notas/ sirve notas/index.html */
+const PAGINAS = ["experimento-01", "notas/index", "notas/asistente-climatico"];
 
 /** en desarrollo y en preview, igual que en producción: /experimento-01 (sin .html ni barra final) */
 function rutasLimpias(): Plugin {
   const reescribir = (req: { url?: string }) => {
     const [ruta = "", consulta] = (req.url ?? "").split("?");
-    if (PAGINAS.includes(ruta.slice(1))) req.url = `${ruta}.html${consulta ? `?${consulta}` : ""}`;
+    const limpia = ruta.replace(/^\/|\/$/g, "");
+    const pagina = PAGINAS.find((p) => p === limpia || p === `${limpia}/index`);
+    if (pagina) req.url = `/${pagina}.html${consulta ? `?${consulta}` : ""}`;
   };
   return {
     name: "rutas-limpias",
@@ -40,7 +43,10 @@ export default defineConfig({
       input: {
         principal: fileURLToPath(new URL("./index.html", import.meta.url)),
         ...Object.fromEntries(
-          PAGINAS.map((p) => [p, fileURLToPath(new URL(`./${p}.html`, import.meta.url))]),
+          PAGINAS.map((p) => [
+            p.replace("/", "-"),
+            fileURLToPath(new URL(`./${p}.html`, import.meta.url)),
+          ]),
         ),
       },
       output: {

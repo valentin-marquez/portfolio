@@ -1,0 +1,191 @@
+/* Notas: la voz tipográfica de la portada, medida en el sitio real. Cuerpo en --texto, énfasis con
+   peso y color sin subir de tamaño, rótulos de 13 px en 500, datos en mono de 11 px, Caveat verde
+   para lo dicho a mano y la sombra de los pases para todo lo que es objeto. El cuerpo sube de 15/24
+   a 16/26 porque aquí se lee largo. Los colores y las fuentes vienen de globales.css. */
+@import "@fontsource/public-sans/400.css";
+@import "@fontsource/public-sans/500.css";
+@import "@fontsource/caveat/500.css";
+@import "@fontsource/source-code-pro/400.css";
+@import "../estilos/globales.css";
+
+:root {
+  --linea: rgb(31 31 27 / 0.09);
+  /* la sombra de .pase */
+  --objeto: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 0 0 1px rgb(31 31 27 / 0.06), 0 14px 28px -16px rgb(70 60 30 / 0.35), 0 2px 5px rgb(70 60 30 / 0.06);
+  --golpe: cubic-bezier(0.3, 1.5, 0.6, 1);
+  --col: 624px; --margen: 200px; --indice: 172px;
+}
+* { box-sizing: border-box; }
+html { background: var(--color-fondo); color: var(--color-texto); font: 16px/26px var(--font-sans); -webkit-font-smoothing: antialiased; scroll-padding-top: 88px; scrollbar-gutter: stable; }
+body { margin: 0; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+::selection { background: #dfe6cf; color: var(--color-enfasis); }
+a { color: inherit; text-decoration: underline; text-decoration-color: rgb(31 31 27 / 0.2); text-decoration-thickness: 1px; text-underline-offset: 3px; transition: color 150ms, text-decoration-color 150ms; }
+a:hover { color: var(--color-enfasis); text-decoration-color: currentColor; }
+.mono { font: 11.5px/16px var(--font-mono); color: var(--color-meta); }
+
+/* el cromo, igual al de /experimento-01: volver, título, qué es */
+.cromo { display: flex; align-items: baseline; gap: 20px; padding: 20px 24px 0; font-size: 13px; line-height: 18px; }
+.cromo a { text-decoration: none; }
+.cromo b { color: var(--color-enfasis); font-weight: 500; }
+.cromo span { color: var(--color-meta); }
+
+/* ---------- la nota: índice, texto, margen ---------- */
+.nota { display: grid; grid-template-columns: var(--indice) minmax(0, var(--col)) var(--margen); column-gap: 48px; justify-content: center; padding: 96px 24px 0; }
+.nota > * { grid-column: 2; }
+.indice { grid-column: 1; grid-row: 1 / span 99; position: sticky; top: 88px; align-self: start; font-size: 13px; line-height: 18px; }
+.indice ol { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+.indice li { counter-increment: s; }
+.indice a { display: grid; grid-template-columns: 20px 1fr; padding: 5px 0; color: var(--color-meta); text-decoration: none; }
+.indice a::before { content: counter(s); font: 11px/18px var(--font-mono); }
+.indice a:hover, .indice a.activa { color: var(--color-enfasis); }
+
+.cabecera { padding-bottom: 8px; }
+.cabecera h1 { margin: 0 0 14px; color: var(--color-enfasis); font-size: 24px; line-height: 30px; font-weight: 500; letter-spacing: -0.012em; text-wrap: balance; }
+.cabecera .bajada { margin: 0 0 18px; text-wrap: pretty; }
+.cabecera .datos { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; }
+
+section { position: relative; margin-top: 72px; }
+section > h2 { margin: 0 0 12px; color: var(--color-enfasis); font-size: 16px; line-height: 26px; font-weight: 500; }
+section > h2 .num { position: absolute; left: -40px; width: 28px; text-align: right; color: var(--color-meta); font: 11px/26px var(--font-mono); }
+p { margin: 0 0 16px; text-wrap: pretty; }
+p:last-child { margin-bottom: 0; }
+strong { color: var(--color-enfasis); font-weight: 500; }
+code { font: 0.86em var(--font-mono); color: var(--color-enfasis); }
+p code, .tarjeta-termino code { padding: 1px 5px; border-radius: 4px; background: var(--color-tarjeta); }
+sup { color: var(--color-acento); font: 10px var(--font-mono); margin-left: 1px; }
+
+/* nota al margen, a la altura del párrafo que comenta */
+.con-nota { position: relative; margin-bottom: 16px; }
+.con-nota > p { margin-bottom: 0; }
+.al-margen { position: absolute; left: calc(100% + 48px); top: 4px; width: var(--margen); margin: 0; color: var(--color-meta); font-size: 12.5px; line-height: 18px; text-wrap: pretty; }
+.al-margen.mano { top: -2px; font: 500 21px/21px var(--font-mano); color: var(--color-acento); rotate: -2deg; transform-origin: left top; }
+
+/* ---------- figuras, tablas y listados: objetos con la sombra de los pases ---------- */
+figure { margin: 32px 0; }
+.caja { border-radius: 14px; background: var(--color-plastico); box-shadow: var(--objeto); overflow: hidden; }
+.caja.aire { display: grid; place-items: center; min-height: 300px; padding: 28px 24px; }
+.caja.aire.baja { min-height: 132px; }
+figcaption { margin-top: 12px; font-size: 12.5px; line-height: 18px; color: var(--color-meta); text-wrap: pretty; }
+figcaption .rotulo { font: 11px/18px var(--font-mono); color: var(--color-texto); margin-right: 8px; }
+pre { margin: 0; padding: 18px 20px; overflow-x: auto; font: 12.5px/21px var(--font-mono); color: var(--color-enfasis); }
+pre code { font: inherit; }
+pre .c { color: var(--color-meta); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 22px; }
+th { text-align: left; padding: 11px 20px 9px; font: 11px/16px var(--font-mono); font-weight: 400; color: var(--color-meta); border-bottom: 1px solid var(--linea); }
+td { padding: 9px 20px; border-bottom: 1px solid var(--linea); }
+tr:last-child td { border-bottom: 0; }
+.n { text-align: right; white-space: nowrap; }
+td.n { font: 12.5px/22px var(--font-mono); color: var(--color-enfasis); }
+tr.mejor td:first-child { color: var(--color-enfasis); font-weight: 500; }
+.barras { width: 100%; max-width: 480px; display: grid; grid-template-columns: max-content 1fr max-content; gap: 12px 14px; align-items: center; font-size: 13px; line-height: 18px; }
+.barras i { display: block; height: 8px; border-radius: 2px; background: #d5d0c1; scale: 0 1; transform-origin: left; transition: scale 700ms var(--golpe); }
+.barras.visto i { scale: 1 1; }
+.barras i:nth-of-type(2) { transition-delay: 90ms; } .barras i:nth-of-type(3) { transition-delay: 180ms; } .barras i:nth-of-type(4) { transition-delay: 270ms; }
+.barras i.aj { background: var(--color-acento); }
+.barras span:nth-child(3n) { font: 12.5px/18px var(--font-mono); color: var(--color-enfasis); }
+
+/* ---------- figuras que se mueven ---------- */
+.figura { width: 100%; display: grid; gap: 18px; justify-items: center; font-size: 13px; line-height: 18px; }
+.figura ul { list-style: none; margin: 0; padding: 0; }
+.figura li, .nodo { list-style: none; padding: 4px 9px; border-radius: 6px; background: var(--color-fondo); box-shadow: 0 0 0 1px rgb(31 31 27 / 0.09); color: var(--color-enfasis); white-space: nowrap; }
+.boton { all: unset; cursor: pointer; padding: 6px 14px; border-radius: 8px; background: var(--color-enfasis); color: var(--color-fondo); font: 500 12.5px/20px var(--font-sans); transition: scale 120ms, opacity 150ms; }
+.boton:hover { scale: 1.04; } .boton:active { scale: 0.95; }
+.boton:focus-visible { outline: 2px solid var(--color-acento); outline-offset: 3px; }
+.boton:disabled { opacity: 0.3; pointer-events: none; }
+
+.figura[data-figura=elegir] .pregunta { margin: 0; min-height: 26px; color: var(--color-enfasis); font-size: 16px; line-height: 26px; font-weight: 500; text-align: center; text-wrap: balance; }
+.herramientas { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; max-width: 500px; }
+.herramientas li { font: 11.5px/18px var(--font-mono); transition: background 90ms, color 200ms, opacity 200ms, box-shadow 90ms; }
+.herramientas li.mira { background: var(--color-tarjeta); }
+.herramientas li.elegida { background: var(--color-acento); color: var(--color-plastico); box-shadow: none; }
+.herramientas li.apagada { opacity: 0.3; }
+.salida { margin: 0; min-height: 42px; display: grid; justify-items: center; gap: 4px; visibility: hidden; text-align: center; }
+.salida.hecha { visibility: visible; }
+.salida code { padding: 0; background: none; font: 12.5px/20px var(--font-mono); text-wrap: balance; }
+.salida .fuente { font: 11.5px/16px var(--font-mono); color: var(--color-meta); }
+
+.camino { display: flex; align-items: center; justify-content: center; }
+.nodo { transition: background 300ms, box-shadow 300ms; }
+.nodo.activa { background: var(--color-tarjeta); box-shadow: 0 0 0 1px rgb(31 31 27 / 0.26); }
+.linea { position: relative; width: 20px; height: 1px; background: rgb(31 31 27 / 0.12); }
+.linea::after { content: ""; position: absolute; inset: 0; background: var(--color-enfasis); scale: 0 1; transform-origin: left top; opacity: 0; transition: scale 600ms ease-out, opacity 400ms 500ms; }
+.linea.pasa::after { scale: 1 1; opacity: 0.6; transition: scale 600ms ease-out; }
+
+.figura[data-figura=verificar] { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 18px 20px; }
+.figura[data-figura=verificar] .boton { grid-column: 1 / -1; }
+.cola { display: grid; gap: 6px; justify-items: end; align-content: start; align-self: start; min-height: 192px; }
+.puerta { display: grid; justify-items: center; gap: 8px; padding: 12px 14px; border-radius: 10px; box-shadow: 0 0 0 1px rgb(31 31 27 / 0.1); transition: box-shadow 150ms, background 150ms; }
+.puerta b, .pila b { color: var(--color-enfasis); font-weight: 500; }
+.puerta .ranura { width: 184px; height: 28px; display: grid; place-items: center; border-radius: 7px; background: var(--color-tarjeta); }
+.puerta .lectura, .pila i { font: 11.5px/16px var(--font-mono); color: var(--color-meta); font-style: normal; }
+.puerta.ocupada { box-shadow: 0 0 0 1.5px var(--color-meta); }
+.puerta.bien { box-shadow: 0 0 0 1.5px var(--color-acento); } .puerta.bien .lectura { color: var(--color-acento); }
+.puerta.mal { box-shadow: 0 0 0 1.5px #a8553f; background: #f6ece6; } .puerta.mal .lectura { color: #a8553f; }
+.destinos { display: grid; gap: 14px; align-self: stretch; align-content: start; min-height: 244px; }
+.pila { display: grid; gap: 6px; align-content: start; }
+.pila i { display: inline-block; margin-left: 4px; }
+.pila ul { display: flex; flex-wrap: wrap; gap: 6px; min-height: 26px; }
+.pila.si li { box-shadow: 0 0 0 1px var(--color-acento); }
+li.tachada { opacity: 0.45; text-decoration: line-through; }
+
+/* ---------- término con explicación: el subrayado punteado de "Valentín" en la portada ---------- */
+.termino { all: unset; cursor: help; color: var(--color-enfasis); font-weight: 500; text-decoration: underline dotted rgb(31 31 27 / 0.4); text-decoration-thickness: 1.5px; text-underline-offset: 4px; transition: text-decoration-color 150ms; }
+.termino:hover, .termino[aria-describedby] { text-decoration-color: var(--color-acento); }
+.termino:focus-visible { outline: 2px solid var(--color-acento); outline-offset: 2px; border-radius: 3px; }
+.termino code { font-weight: 400; }
+.tarjeta-termino { position: absolute; z-index: 8; width: min(320px, calc(100vw - 32px)); padding: 14px 16px; border-radius: 14px; background: var(--color-plastico); box-shadow: var(--objeto), 0 22px 40px -18px rgb(70 60 30 / 0.4); font-size: 13.5px; line-height: 20px; opacity: 0; scale: 0.96; translate: 0 -4px; transform-origin: top left; pointer-events: none; transition: opacity 120ms, scale 180ms var(--golpe), translate 180ms var(--golpe); }
+.tarjeta-termino.abierta { opacity: 1; scale: 1; translate: 0; pointer-events: auto; }
+.tarjeta-termino b { display: block; margin-bottom: 6px; color: var(--color-enfasis); font: 11.5px/16px var(--font-mono); font-weight: 400; }
+.tarjeta-termino p { margin: 0; }
+.tarjeta-termino .uso { margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--linea); color: var(--color-meta); font-size: 12.5px; line-height: 18px; }
+.tarjeta-termino .uso::before { content: "aquí"; margin-right: 7px; color: var(--color-acento); font: 500 19px/18px var(--font-mano); }
+
+/* ---------- el cierre, como el de la portada ---------- */
+.cierre { grid-column: 2; display: flex; justify-content: space-between; align-items: baseline; margin-top: 96px; padding: 20px 0 120px; border-top: 1px solid var(--linea); font-size: 15px; }
+.cierre a { text-decoration: none; }
+
+/* ---------- índice de notas: la columna de la portada ---------- */
+.lista { max-width: 608px; margin: 0 auto; padding: 96px 24px 0; }
+.lista h1 { margin: 0 0 6px; color: var(--color-enfasis); font-size: 13px; line-height: 18px; font-weight: 500; }
+.lista .bajada { margin: 0 0 40px; font-size: 15px; line-height: 24px; }
+.lista ol { list-style: none; margin: 0; padding: 0; }
+.lista li a { display: grid; grid-template-columns: 1fr max-content; gap: 2px 24px; padding: 18px 0; border-top: 1px solid var(--linea); text-decoration: none; font-size: 15px; line-height: 24px; }
+.lista h2 { margin: 0; color: var(--color-enfasis); font-size: 15px; line-height: 24px; font-weight: 500; transition: translate 180ms var(--golpe); }
+.lista p { grid-column: 1; margin: 0; }
+.lista .fecha { grid-row: 1; grid-column: 2; line-height: 24px; }
+.lista a:hover h2 { translate: 5px 0; }
+.lista .cierre { margin-top: 0; }
+
+/* ---------- pantallas angostas: una columna ---------- */
+@media (max-width: 1160px) {
+  .nota { grid-template-columns: minmax(0, var(--col)); padding-top: 64px; }
+  .nota > *, .cierre { grid-column: 1; }
+  .indice { display: none; }
+  .al-margen, .al-margen.mano { position: static; width: auto; margin: 10px 0 0; padding-left: 12px; border-left: 2px solid var(--color-tarjeta); rotate: none; }
+  section > h2 .num { position: static; display: inline-block; width: auto; margin-right: 10px; }
+}
+@media (max-width: 760px) {
+  .figura[data-figura=verificar] { grid-template-columns: minmax(0, 1fr); }
+  .cola { display: flex; flex-wrap: wrap; justify-content: center; align-content: center; min-height: 88px; }
+  .destinos { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); width: 100%; min-height: 184px; }
+  .pila li { white-space: normal; font-size: 12px; }
+  .puerta .ranura { width: min(220px, 60vw); }
+  .camino { flex-direction: column; }
+  .linea { width: 1px; height: 14px; }
+  .linea::after { scale: 1 0; }
+}
+@media (max-width: 560px) {
+  html { font-size: 15px; line-height: 24px; }
+  .nota, .lista { padding-inline: 20px; }
+  .cromo { padding-inline: 20px; gap: 14px; }
+  .cabecera h1 { font-size: 22px; line-height: 28px; }
+  section { margin-top: 56px; }
+  section > h2, .figura[data-figura=elegir] .pregunta { font-size: 15px; line-height: 24px; }
+  /* en teléfono la caja va de borde a borde: gana 40 px de ancho */
+  .caja { margin-inline: -20px; border-radius: 0; box-shadow: 0 1px 0 var(--linea), 0 -1px 0 var(--linea); }
+  .caja.aire { padding: 24px 16px; }
+  td, th, pre { padding-inline: 20px; }
+  table { font-size: 13.5px; }
+}
+@media (prefers-reduced-motion: reduce) { .barras i, .linea::after, .nodo, .tarjeta-termino, .lista h2 { transition: none; } }

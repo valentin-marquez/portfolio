@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Cómo ajustamos un modelo de 2B para que el asistente climático del Ministerio del Medio Ambiente sepa a qué fuente preguntarle cada cosa, corriendo en CPU." />
+    <meta name="theme-color" content="#f6f3ea" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>Un modelo de 2B que elige bien · Valentín Márquez</title>
+    <!-- en el head y no desde el módulo: sin esto el primer cuadro sale sin estilos -->
+    <link rel="stylesheet" href="/src/notas/notas.css" />
+  </head>
+  <body>
+    <header class="cromo"><a href="/notas/">← Notas</a><b>Un modelo de 2B que elige bien</b><span>nota 01</span></header>
+
+    <main class="nota">
+      <nav class="indice" aria-label="Contenido">
+        <ol>
+          <li><a href="#problema">El problema</a></li>
+          <li><a href="#ajustar">Ajustar, no cambiar de modelo</a></li>
+          <li><a href="#datos">De las skills a los datos</a></li>
+          <li><a href="#entrenar">El entrenamiento</a></li>
+          <li><a href="#resultados">Resultados</a></li>
+        </ol>
+      </nav>
+
+      <header class="cabecera">
+        <h1>Un modelo de 2B que elige bien</h1>
+        <p class="bajada">Cómo ajustamos un modelo chico para que el asistente climático del Ministerio del Medio Ambiente sepa a qué fuente preguntarle cada cosa, corriendo en CPU y sin servicios externos.</p>
+        <p class="datos mono"><time datetime="2026-11-24">24 nov 2026</time><span>5 min de lectura</span><a href="https://github.com/valentin-marquez/asistente-climatico">asistente-climatico ↗</a></p>
+      </header>
+
+      <section id="problema">
+        <h2><span class="num">§1</span>El problema</h2>
+        <p>El asistente responde preguntas sobre cambio climático en Chile con las fuentes oficiales del ministerio. Cada respuesta cita su fuente y, si el dato no está publicado, lo dice. El modelo no sabe ningún dato: su trabajo es elegir la <button class="termino" type="button" data-t="herramienta" data-uso="las 20 herramientas salen de las skills que declara el asistente.">herramienta</button> que lo tiene y redactar la frase que va encima.</p>
+        <figure>
+          <div class="caja aire"><div class="figura" data-figura="elegir"></div></div>
+          <figcaption><span class="rotulo">fig. 1</span>El modelo recorre la lista, elige una herramienta y le pasa sus argumentos. El dato lo pone la fuente.</figcaption>
+        </figure>
+        <div class="con-nota">
+          <p>Eso tiene que pasar en un servidor sin GPU, en unos 3 segundos y con 2 GB de memoria. Con esas condiciones el modelo base, Qwen3.5 de 2B, ya era la mejor opción que medimos. Lo que le faltaba era elegir bien.<sup>1</sup></p>
+          <aside class="al-margen"><sup>1</sup> Un diagnóstico sobre sus 39 fallas encontró que 27 eran de elección de herramienta o de argumento, no de redacción.</aside>
+        </div>
+      </section>
+
+      <section id="ajustar">
+        <h2><span class="num">§2</span>Ajustar, no cambiar de modelo</h2>
+        <p>Antes de entrenar nada probamos la salida fácil: un modelo más grande. En el servidor de pruebas, Llama 3.2 de 3B fue la mitad de rápido que el 2B (6,8 contra 13,7 <button class="termino" type="button" data-t="toks" data-uso="medido en un Xeon E5-2630 v4, la misma familia que producción.">tok/s</button>) y eligió peor. Gemma 4 E2B acertó 33 de 40 contra 35 de 40, con un archivo de 3,1 GB en vez de 1,3.</p>
+        <p>Ajustar el 2B mantiene su costo en producción y ataca justo la falla que tenía. La técnica fue <button class="termino" type="button" data-t="qlora" data-uso="permitió entrenar el 2B en una RTX 3060 Ti de 8 GB, con 5,6 GB de memoria.">QLoRA</button>, y el resultado se publica como un solo archivo <button class="termino" type="button" data-t="gguf" data-uso="es lo que se publica en Hugging Face y lo que carga el servidor.">GGUF</button> en <button class="termino" type="button" data-t="cuant" data-uso="deja el modelo en 1,31 GB."><code>Q4_K_M</code></button>.</p>
+      </section>
+
+      <section id="datos">
+        <h2><span class="num">§3</span>De las skills a los datos</h2>
+        <div class="con-nota">
+          <p>No hay preguntas reales de la ciudadanía en el entrenamiento. Las preguntas son sintéticas, escritas por agentes a partir de la descripción de cada skill, y cada etiqueta se verifica contra la API pública antes de entrar. Si la llamada no trae registros, el ejemplo se descarta (fig. 3).</p>
+          <aside class="al-margen mano">ni una sola pregunta real</aside>
+        </div>
+        <figure>
+          <div class="caja aire baja"><div class="figura" data-figura="camino"></div></div>
+          <figcaption><span class="rotulo">fig. 2</span>El camino completo, de la declaración de una skill al archivo que carga el servidor.</figcaption>
+        </figure>
+        <figure>
+          <div class="caja aire"><div class="figura" data-figura="verificar"></div></div>
+          <figcaption><span class="rotulo">fig. 3</span>Cada pregunta sintética se prueba contra la API real y solo pasan las que traen registros. Los seis ejemplos son ilustrativos.</figcaption>
+        </figure>
+        <p>La versión 3.4 se entrenó con 3.404 ejemplos de elección y 914 de redacción. Ya en la segunda versión, Valdivia y Rancagua se habían dejado fuera a propósito. El modelo las resolvió igual: aprendió la diferencia entre comuna y región, no los nombres.</p>
+      </section>
+
+      <section id="entrenar">
+        <h2><span class="num">§4</span>El entrenamiento</h2>
+        <div class="con-nota">
+          <p>La receta de la primera versión fue corta: una época, con <button class="termino" type="button" data-t="adamw" data-uso="en su versión de 8 bits, que guarda esos promedios en menos memoria."><code>adamw()</code></button> de 8 bits y la <button class="termino" type="button" data-t="coseno" data-uso="parte en 2e-4, con un 5 % de calentamiento antes de empezar a bajar.">tasa bajando en coseno</button> desde 2e-4. Tomó unos 55 minutos en una RTX 3060 Ti.</p>
+          <aside class="al-margen">Fuente: <a href="https://github.com/valentin-marquez/asistente-climatico/blob/main/training/BITACORA.md">training/BITACORA.md</a>, sección Parámetros.</aside>
+        </div>
+        <figure>
+          <div class="caja"><pre><code><span class="c"># training/entrenar.py</span>
+r, alpha, dropout = 16, 16, 0.0        <span class="c"># matrices de QLoRA</span>
+capas   = ["atencion", "mlp"]          <span class="c"># sin las de visión</span>
+epocas  = 1
+lote    = 4 * 2                        <span class="c"># 4 con acumulación 2</span>
+tasa    = 2e-4                         <span class="c"># coseno, 5 % de calentamiento</span>
+optim   = "adamw_8bit"
+largo   = 4096                         <span class="c"># tokens</span></code></pre></div>
+          <figcaption><span class="rotulo">listado 1</span>Los parámetros de la primera versión. La 3.7, la vigente, pasó a LoRA de rango 64 sin cuantizar y dos épocas.</figcaption>
+        </figure>
+      </section>
+
+      <section id="resultados">
+        <h2><span class="num">§5</span>Resultados</h2>
+        <p>Medimos sobre un <button class="termino" type="button" data-t="ciego" data-uso="150 preguntas de usuarios, escritas por un agente que no vio el código ni las otras preguntas.">conjunto ciego</button> de 150 preguntas. Los cambios de código solos subieron de 117 a 128. El primer ajuste llegó a 139 y el segundo a 147, con el peor caso bajando de 26 segundos a menos de uno (tabla 1).</p>
+        <figure>
+          <div class="caja">
+            <table>
+              <thead><tr><th>Corrida</th><th class="n">Correctas</th><th class="n">Peor caso</th></tr></thead>
+              <tbody>
+                <tr><td>2B base, antes de los cambios de código</td><td class="n">117 / 150</td><td class="n"></td></tr>
+                <tr><td>2B base, solo la decisión</td><td class="n">126 / 150</td><td class="n">26 s</td></tr>
+                <tr><td>2B ajustado, v1</td><td class="n">139 / 150</td><td class="n">0,9 s</td></tr>
+                <tr class="mejor"><td>2B ajustado, v2</td><td class="n">147 / 150</td><td class="n">0,8 s</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <figcaption><span class="rotulo">tabla 1</span>Aciertos al elegir herramienta en las 150 preguntas de usuarios.</figcaption>
+        </figure>
+        <figure>
+          <div class="caja aire baja">
+            <div class="barras">
+              <span>Base</span><i style="width: 78%"></i><span>117</span>
+              <span>Base, decisión</span><i style="width: 84%"></i><span>126</span>
+              <span>Ajustado v1</span><i class="aj" style="width: 92.7%"></i><span>139</span>
+              <span>Ajustado v2</span><i class="aj" style="width: 98%"></i><span>147</span>
+            </div>
+          </div>
+          <figcaption><span class="rotulo">fig. 4</span>Lo mismo, a escala de 150. En verde, las versiones ajustadas.</figcaption>
+        </figure>
+        <p>La versión vigente, la 3.7, acierta <strong>907 de 940</strong> casos sumando todos los conjuntos. La 3.8 redactó mejor pero empeoró en los seguimientos, así que no se publicó.</p>
+      </section>
+
+      <footer class="cierre"><a href="/notas/">← todas las notas</a><span class="mono">santiago · nov 2026</span></footer>
+    </main>
+    <script type="module" src="/src/notas/asistente-climatico/pagina.ts"></script>
+  </body>
+</html>
