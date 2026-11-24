@@ -47,7 +47,6 @@ a:hover { color: var(--color-enfasis); text-decoration-color: currentColor; }
 
 section { position: relative; margin-top: 72px; }
 section > h2 { margin: 0 0 12px; color: var(--color-enfasis); font-size: 16px; line-height: 26px; font-weight: 500; }
-section > h2 .num { position: absolute; left: -40px; width: 28px; text-align: right; color: var(--color-meta); font: 11px/26px var(--font-mono); }
 p { margin: 0 0 16px; text-wrap: pretty; }
 p:last-child { margin-bottom: 0; }
 strong { color: var(--color-enfasis); font-weight: 500; }
@@ -67,7 +66,6 @@ figure { margin: 32px 0; }
 .caja.aire { display: grid; place-items: center; min-height: 300px; padding: 28px 24px; }
 .caja.aire.baja { min-height: 132px; }
 figcaption { margin-top: 12px; font-size: 12.5px; line-height: 18px; color: var(--color-meta); text-wrap: pretty; }
-figcaption .rotulo { font: 11px/18px var(--font-mono); color: var(--color-texto); margin-right: 8px; }
 pre { margin: 0; padding: 18px 20px; overflow-x: auto; font: 12.5px/21px var(--font-mono); color: var(--color-enfasis); }
 pre code { font: inherit; }
 pre .c { color: var(--color-meta); }
@@ -78,12 +76,6 @@ tr:last-child td { border-bottom: 0; }
 .n { text-align: right; white-space: nowrap; }
 td.n { font: 12.5px/22px var(--font-mono); color: var(--color-enfasis); }
 tr.mejor td:first-child { color: var(--color-enfasis); font-weight: 500; }
-.barras { width: 100%; max-width: 480px; display: grid; grid-template-columns: max-content 1fr max-content; gap: 12px 14px; align-items: center; font-size: 13px; line-height: 18px; }
-.barras i { display: block; height: 8px; border-radius: 2px; background: #d5d0c1; scale: 0 1; transform-origin: left; transition: scale 700ms var(--golpe); }
-.barras.visto i { scale: 1 1; }
-.barras i:nth-of-type(2) { transition-delay: 90ms; } .barras i:nth-of-type(3) { transition-delay: 180ms; } .barras i:nth-of-type(4) { transition-delay: 270ms; }
-.barras i.aj { background: var(--color-acento); }
-.barras span:nth-child(3n) { font: 12.5px/18px var(--font-mono); color: var(--color-enfasis); }
 
 /* ---------- figuras que se mueven ---------- */
 .figura { width: 100%; display: grid; gap: 18px; justify-items: center; font-size: 13px; line-height: 18px; }
@@ -163,7 +155,6 @@ li.tachada { opacity: 0.45; text-decoration: line-through; }
   .nota > *, .cierre { grid-column: 1; }
   .indice { display: none; }
   .al-margen, .al-margen.mano { position: static; width: auto; margin: 10px 0 0; padding-left: 12px; border-left: 2px solid var(--color-tarjeta); rotate: none; }
-  section > h2 .num { position: static; display: inline-block; width: auto; margin-right: 10px; }
 }
 @media (max-width: 760px) {
   .figura[data-figura=verificar] { grid-template-columns: minmax(0, 1fr); }
@@ -188,4 +179,4 @@ li.tachada { opacity: 0.45; text-decoration: line-through; }
   td, th, pre { padding-inline: 20px; }
   table { font-size: 13.5px; }
 }
-@media (prefers-reduced-motion: reduce) { .barras i, .linea::after, .nodo, .tarjeta-termino, .lista h2 { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .linea::after, .nodo, .tarjeta-termino, .lista h2 { transition: none; } }

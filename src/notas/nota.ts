@@ -1,5 +1,5 @@
-// Lo que comparten todas las notas: la tarjeta de los términos, el índice que marca la sección que se
-// lee y las barras que crecen al entrar en pantalla.
+// Lo que comparten todas las notas: la tarjeta de los términos, y el índice que marca la sección que se
+// lee.
 import { esTermino, GLOSARIO } from "./glosario";
 
 // ============ términos ============
@@ -75,16 +75,3 @@ const lectura = new IntersectionObserver(
   { rootMargin: "-20% 0px -70% 0px" },
 );
 for (const s of document.querySelectorAll("section[id]")) lectura.observe(s);
-
-// ============ barras ============
-const alVer = new IntersectionObserver(
-  (entradas) => {
-    for (const e of entradas) {
-      if (!e.isIntersecting) continue;
-      e.target.classList.add("visto");
-      alVer.unobserve(e.target);
-    }
-  },
-  { threshold: 0.6 },
-);
-for (const b of document.querySelectorAll(".barras")) alVer.observe(b);
